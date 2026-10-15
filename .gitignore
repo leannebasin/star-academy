@@ -1,0 +1,4 @@
+# Ignore old folder
+staracademy/
+.DS_Store
+Thumbs.db

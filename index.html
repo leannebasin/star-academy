@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Star Academy - Le Suivi des Primes & Candidats</title>
+  
+  <!-- Viewport avec viewport-fit=cover pour iPhone (Safe Areas & Notch / Dynamic Island) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- Configuration PWA & Apple Web Clip iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Star Ac'">
+  <meta name="theme-color" content="#0c0a24">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Favicon & Apple Touch Icons -->
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  
+  <!-- Polices & Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Fond étoilé décoratif -->
+  <div class="star-dust"></div>
+
+  <div id="app-container">
+    <!-- BANDEAU HAUT (Header iOS) -->
+    <header class="app-header">
+      <div class="brand-wrapper">
+        <div class="brand-logo-star">
+          <svg viewBox="0 0 24 24">
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Star Academy</span>
+          <span class="brand-subtitle">Le Suivi Officieux</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="auth-header-btn" class="auth-badge-btn" onclick="openAuthModal()">
+          <span id="auth-btn-label">Se connecter</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BANNIÈRE D'INFORMATION INITIALISATION SUPABASE (affichée si les tables ne sont pas encore créées) -->
+    <div id="db-alert-banner" class="db-status-banner hidden">
+      <span>ℹ️ Activez vos tables Supabase pour le multi-utilisateur</span>
+      <button onclick="openSqlModal()">Voir le script SQL</button>
+    </div>
+
+    <!-- CONTENU PRINCIPAL PAR ONGLETS -->
+    <main>
+      <!-- ========================================== -->
+      <!-- 1. ONGLET ACCUEIL (DASHBOARD)              -->
+      <!-- ========================================== -->
+      <section id="tab-home" class="tab-pane active">
+        <!-- Compte à rebours du prochain Prime -->
+        <div class="hero-countdown-card">
+          <div class="hero-header">
+            <span class="hero-badge">Prochain Rendez-vous</span>
+            <div class="live-indicator">
+              <span class="pulsing-dot"></span>
+              <span id="countdown-status-text">Samedi 21h10 sur TF1</span>
+            </div>
+          </div>
+          <h2 class="hero-title" id="next-prime-title">Prime des Évaluations</h2>
+          <p class="hero-subtitle" id="next-prime-desc">Qui saura convaincre les professeurs et le public ?</p>
+          
+          <div class="countdown-grid">
+            <div class="countdown-box">
+              <span class="countdown-number" id="cd-days">00</span>
+              <span class="countdown-label">Jours</span>
+            </div>
+            <div class="countdown-box">
+              <span class="countdown-number" id="cd-hours">00</span>
+              <span class="countdown-label">Heures</span>
+            </div>
+            <div class="countdown-box">
+              <span class="countdown-number" id="cd-mins">00</span>
+              <span class="countdown-label">Min</span>
+            </div>
+            <div class="countdown-box">
+              <span class="countdown-number" id="cd-secs">00</span>
+              <span class="countdown-label">Sec</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guide d'installation iPhone Callout -->
+        <div class="ios-install-callout" id="ios-prompt-box">
+          <div class="ios-callout-text">
+            <h4>📱 Installer sur iPhone</h4>
+            <p>Ajoutez cette app sur votre écran d'accueil en 2 clics !</p>
+          </div>
+          <button class="ios-callout-btn" onclick="openIosGuideModal()">Comment faire ?</button>
+        </div>
+
+        <!-- Les Nominés de la semaine -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            Les Nominés de la semaine
+          </h3>
+          <span class="section-link" onclick="switchTab('predictions')">Pronostiquer &rarr;</span>
+        </div>
+        <div id="home-nominees-container" class="nominees-scroll-container">
+          <!-- Injecté par JavaScript -->
+        </div>
+
+        <!-- Statistiques rapides -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+            </svg>
+            Mon Suivi
+          </h3>
+        </div>
+        <div class="quick-stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-val" id="stat-fav-count">0</div>
+            <div class="stat-desc">Favoris</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-val" id="stat-ratings-count">0</div>
+            <div class="stat-desc">Notes données</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-val" id="stat-avg-score">--/20</div>
+            <div class="stat-desc">Moyenne perso</div>
+          </div>
+        </div>
+
+        <!-- Mes Favoris Coup de Cœur -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">❤️ Mes Étoiles Coup de Cœur</h3>
+          <span class="section-link" onclick="switchTab('candidates')">Tous les élèves</span>
+        </div>
+        <div id="home-favorites-container" class="candidates-grid">
+          <!-- Injecté par JavaScript -->
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- 2. ONGLET CANDIDATS (ÉLÈVES)               -->
+      <!-- ========================================== -->
+      <section id="tab-candidates" class="tab-pane">
+        <!-- Filtres par statut -->
+        <div class="filter-pills-row">
+          <button class="filter-pill active" onclick="filterCandidates('all', this)">Tous</button>
+          <button class="filter-pill" onclick="filterCandidates('active', this)">En lice</button>
+          <button class="filter-pill" onclick="filterCandidates('nominated', this)">Nommés ⚠️</button>
+          <button class="filter-pill" onclick="filterCandidates('eliminated', this)">Éliminés</button>
+          <button class="filter-pill" onclick="filterCandidates('favorites', this)">⭐ Mes Favoris</button>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="form-group" style="margin-top: 10px;">
+          <input type="text" id="candidate-search-input" class="custom-input" placeholder="🔍 Rechercher un élève..." oninput="handleCandidateSearch(this.value)">
+        </div>
+
+        <!-- Grille des candidats -->
+        <div id="candidates-grid-container" class="candidates-grid">
+          <!-- Cartes générées par JS -->
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- 3. ONGLET LIVE PRIME (NOTER EN DIRECT)     -->
+      <!-- ========================================== -->
+      <section id="tab-primes" class="tab-pane">
+        <div class="live-rating-card">
+          <div class="hero-header" style="margin-bottom: 12px;">
+            <span class="hero-badge">Prime en direct</span>
+            <span style="font-size: 0.8rem; color: var(--text-gold); font-weight: 700;">🎤 Noter la prestation</span>
+          </div>
+
+          <!-- Choix du prime -->
+          <div class="form-group">
+            <label class="form-label" for="rating-prime-select">Prime concerné</label>
+            <select id="rating-prime-select" class="custom-select">
+              <!-- Chargé par JS -->
+            </select>
+          </div>
+
+          <!-- Choix du candidat -->
+          <div class="form-group">
+            <label class="form-label" for="rating-candidate-select">Élève sur scène</label>
+            <select id="rating-candidate-select" class="custom-select">
+              <!-- Chargé par JS -->
+            </select>
+          </div>
+
+          <!-- Chanson chantée -->
+          <div class="form-group">
+            <label class="form-label" for="rating-song-input">Titre de la chanson / Duo</label>
+            <input type="text" id="rating-song-input" class="custom-input" placeholder="Ex: Ne me quitte pas (duo avec invité)...">
+          </div>
+
+          <!-- Curseur de note globale sur 20 -->
+          <div class="form-group">
+            <label class="form-label">Note globale sur 20</label>
+            <div class="score-slider-wrap">
+              <div class="score-display">
+                <span class="score-number" id="live-score-display">15.0</span>
+                <span class="score-max">/20</span>
+              </div>
+              <div class="score-appreciation" id="live-score-appreciation">Très bonne prestation !</div>
+              <input type="range" id="live-score-slider" class="score-slider" min="0" max="20" step="0.5" value="15" oninput="updateScoreDisplay(this.value)">
+            </div>
+          </div>
+
+          <!-- Sous-critères optionnels (Chant & Danse) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Chant /20</label>
+              <input type="number" id="rating-sing-input" class="custom-input" min="0" max="20" step="0.5" placeholder="15">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Danse /20</label>
+              <input type="number" id="rating-dance-input" class="custom-input" min="0" max="20" step="0.5" placeholder="14">
+            </div>
+          </div>
+
+          <!-- Commentaire -->
+          <div class="form-group">
+            <label class="form-label" for="rating-comment-input">Mon commentaire / critique</label>
+            <textarea id="rating-comment-input" class="custom-textarea" rows="2" placeholder="Ce que j'ai pensé de la justesse, de l'émotion et de l'énergie..."></textarea>
+          </div>
+
+          <!-- Bouton enregistrer -->
+          <button class="action-btn-gold" onclick="saveUserRating()">
+            ✨ Enregistrer ma note
+          </button>
+        </div>
+
+        <!-- Historique de mes notes pour ce Prime -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">📋 Mes notes du Prime</h3>
+        </div>
+        <div id="ratings-history-container" class="user-ratings-list">
+          <!-- Rempli par JS -->
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- 4. ONGLET PRONOSTICS                       -->
+      <!-- ========================================== -->
+      <section id="tab-predictions" class="tab-pane">
+        <div class="prediction-box">
+          <div class="hero-header">
+            <span class="hero-badge">Pronostics du Samedi</span>
+            <span style="font-size: 0.75rem; color: var(--text-gold); font-weight: 700;">🔮 Qui reste ? Qui part ?</span>
+          </div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Faites vos prédictions sur l'issue du prime avant l'annonce officielle des résultats par Nikos !
+          </p>
+
+          <div class="prediction-category">
+            <div class="prediction-category-title">
+              <span>🇫🇷 Sauvé(e) par le vote du public</span>
+            </div>
+            <select id="pred-public-select" class="custom-select">
+              <option value="">Sélectionner un élève sauvé par le public</option>
+            </select>
+          </div>
+
+          <div class="prediction-category">
+            <div class="prediction-category-title">
+              <span>🤝 Sauvé(e) par le vote des élèves</span>
+            </div>
+            <select id="pred-students-select" class="custom-select">
+              <option value="">Sélectionner l'élève repêché au château</option>
+            </select>
+          </div>
+
+          <div class="prediction-category">
+            <div class="prediction-category-title">
+              <span>🚪 Éliminé(e) ce samedi</span>
+            </div>
+            <select id="pred-eliminated-select" class="custom-select">
+              <option value="">Sélectionner l'élève qui quitte l'aventure</option>
+            </select>
+          </div>
+
+          <button class="action-btn-gold" style="margin-top: 10px;" onclick="saveUserPrediction()">
+            🔮 Valider mes pronostics
+          </button>
+        </div>
+
+        <div class="section-title-wrap">
+          <h3 class="section-title">📊 Tendances & Comparaisons</h3>
+        </div>
+        <div id="community-predictions-box" style="background: var(--bg-card); border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--border-subtle); font-size: 0.85rem; color: var(--text-secondary);">
+          Connectez-vous pour voir les tendances de votes de vos amis et de la communauté !
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- 5. ONGLET PROFIL & CLASSEMENTS             -->
+      <!-- ========================================== -->
+      <section id="tab-profile" class="tab-pane">
+        <!-- Bloc Identité Utilisateur -->
+        <div class="user-profile-header">
+          <img id="user-profile-avatar" class="profile-avatar-large" src="icons/favicon.png" alt="Avatar">
+          <div class="profile-details">
+            <h3 id="user-profile-name">Invité</h3>
+            <p id="user-profile-email">Mode démo local</p>
+          </div>
+        </div>
+
+        <!-- Mon Podium Personnalisé -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">🏆 Mon Podium Personnel</h3>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
+          Calculé selon vos notes moyennes attribuées à chaque élève.
+        </p>
+
+        <div class="podium-container" id="user-podium-container">
+          <!-- Deuxième (Argent) -->
+          <div class="podium-step podium-second">
+            <img id="podium-2-img" class="podium-avatar" src="icons/favicon.png" alt="2e">
+            <span class="podium-name" id="podium-2-name">--</span>
+            <span class="podium-score" id="podium-2-score">--/20</span>
+            <div class="podium-block">2</div>
+          </div>
+          <!-- Premier (Or) -->
+          <div class="podium-step podium-first">
+            <img id="podium-1-img" class="podium-avatar" src="icons/favicon.png" alt="1er">
+            <span class="podium-name" id="podium-1-name">--</span>
+            <span class="podium-score" id="podium-1-score">--/20</span>
+            <div class="podium-block">1</div>
+          </div>
+          <!-- Troisième (Bronze) -->
+          <div class="podium-step podium-third">
+            <img id="podium-3-img" class="podium-avatar" src="icons/favicon.png" alt="3e">
+            <span class="podium-name" id="podium-3-name">--</span>
+            <span class="podium-score" id="podium-3-score">--/20</span>
+            <div class="podium-block">3</div>
+          </div>
+        </div>
+
+        <!-- Classement complet -->
+        <div class="section-title-wrap">
+          <h3 class="section-title">📊 Mon Classement Complet</h3>
+        </div>
+        <div id="full-ranking-container" class="user-ratings-list" style="margin-bottom: 24px;">
+          <!-- Injecté par JS -->
+        </div>
+
+        <!-- Actions compte -->
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+          <button id="auth-main-action-btn" class="action-btn-gold" onclick="openAuthModal()">
+            Se connecter / Créer un compte
+          </button>
+          <button class="btn-secondary" onclick="openIosGuideModal()">
+            📱 Guide d'installation iPhone
+          </button>
+          <button class="btn-secondary" onclick="openSqlModal()">
+            ⚙️ Script SQL Supabase
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- BARRE DE NAVIGATION INFÉRIEURE (iOS TAB BAR) -->
+    <!-- ========================================== -->
+    <nav class="ios-tab-bar">
+      <button class="tab-btn active" onclick="switchTab('home')">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span>Accueil</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('candidates')">
+        <svg viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>Élèves</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('primes')">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+        <span>Live Notes</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('predictions')">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Pronostics</span>
+      </button>
+
+      <button class="tab-btn" onclick="switchTab('profile')">
+        <svg viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profil</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODALES                                    -->
+  <!-- ========================================== -->
+
+  <!-- 1. MODALE D'AUTHENTIFICATION (CONNEXION & INSCRIPTION SUPABASE) -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-grabber"></div>
+      <div class="modal-header">
+        <h3 class="modal-title" id="auth-modal-title">Connexion</h3>
+        <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+        Connectez-vous pour sauvegarder vos notes de prime, vos pronostics et vos favoris sur votre compte personnel !
+      </p>
+
+      <div class="form-group" id="auth-username-group" style="display: none;">
+        <label class="form-label" for="auth-username">Pseudo / Nom d'artiste</label>
+        <input type="text" id="auth-username" class="custom-input" placeholder="Ex: StarFan75">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-email">Adresse Email</label>
+        <input type="email" id="auth-email" class="custom-input" placeholder="votre.email@exemple.com" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="auth-password">Mot de passe</label>
+        <input type="password" id="auth-password" class="custom-input" placeholder="••••••••" required>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+        <button id="auth-submit-btn" class="action-btn-gold" onclick="handleAuthSubmit()">
+          Se connecter
+        </button>
+        <button id="auth-toggle-btn" class="btn-secondary" onclick="toggleAuthMode()">
+          Pas encore de compte ? S'inscrire
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODALE GUIDE INSTALLATION IPHONE -->
+  <div id="ios-guide-modal" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-grabber"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">Installer sur iPhone 📱</h3>
+        <button class="modal-close-btn" onclick="closeIosGuideModal()">&times;</button>
+      </div>
+
+      <div class="install-step-card">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h5>Ouvrez ce site dans Safari</h5>
+          <p>L'installation comme application native nécessite d'utiliser le navigateur <strong>Safari</strong> sur votre iPhone.</p>
+        </div>
+      </div>
+
+      <div class="install-step-card">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h5>Touchez le bouton Partager</h5>
+          <p>En bas au milieu de l'écran de Safari, touchez l'icône de partage <strong>(le carré avec une flèche vers le haut ⎋)</strong>.</p>
+        </div>
+      </div>
+
+      <div class="install-step-card">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h5>Sélectionnez « Sur l'écran d'accueil »</h5>
+          <p>Faites défiler la liste vers le bas et touchez <strong>« Sur l'écran d'accueil » ➕</strong>, puis touchez <strong>Ajouter</strong> en haut à droite.</p>
+        </div>
+      </div>
+
+      <div class="install-step-card">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h5>Profitez de l'application !</h5>
+          <p>L'icône Star Academy apparaît sur votre écran d'accueil et s'ouvre en plein écran sans les barres de navigateur.</p>
+        </div>
+      </div>
+
+      <button class="action-btn-gold" style="margin-top: 10px;" onclick="closeIosGuideModal()">
+        C'est compris !
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. MODALE DÉTAIL CANDIDAT -->
+  <div id="candidate-modal" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-grabber"></div>
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-cand-name">Détail Élève</h3>
+        <button class="modal-close-btn" onclick="closeCandidateModal()">&times;</button>
+      </div>
+
+      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+        <img id="modal-cand-img" src="icons/favicon.png" style="width: 80px; height: 80px; border-radius: var(--radius-md); object-fit: cover;" alt="Photo">
+        <div style="display: flex; flex-direction: column; justify-content: center;">
+          <h4 id="modal-cand-fullname" style="font-size: 1.1rem; color: #FFFFFF;">--</h4>
+          <span id="modal-cand-meta" style="font-size: 0.8rem; color: var(--text-muted);">--</span>
+          <span id="modal-cand-status" class="candidate-status-tag status-active" style="display: inline-block; position: static; margin-top: 6px; width: fit-content;">En lice</span>
+        </div>
+      </div>
+
+      <p id="modal-cand-bio" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+        --
+      </p>
+
+      <button id="modal-cand-fav-btn" class="action-btn-gold" style="margin-bottom: 10px;" onclick="toggleCurrentCandidateFav()">
+        ⭐ Ajouter aux favoris
+      </button>
+      <button class="btn-secondary" onclick="openRatingForCurrentCandidate()">
+        🎤 Noter lors d'un prime
+      </button>
+    </div>
+  </div>
+
+  <!-- 4. MODALE SQL SUPABASE -->
+  <div id="sql-modal" class="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-grabber"></div>
+      <div class="modal-header">
+        <h3 class="modal-title">Script SQL Supabase ⚙️</h3>
+        <button class="modal-close-btn" onclick="closeSqlModal()">&times;</button>
+      </div>
+
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
+        Pour activer la séparation des données multi-utilisateurs et le stockage cloud dans votre projet Supabase, copiez ce script et exécutez-le dans votre <strong>SQL Editor Supabase</strong> :
+      </p>
+
+      <button class="action-btn-gold" style="margin-bottom: 12px;" onclick="copySqlToClipboard()">
+        📋 Copier le script SQL dans le presse-papiers
+      </button>
+
+      <textarea id="sql-code-display" class="custom-textarea" rows="8" readonly style="font-family: monospace; font-size: 0.75rem; color: #A0A5C0;"></textarea>
+    </div>
+  </div>
+
+  <!-- CONTENEUR DES NOTIFICATIONS TOAST -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- SUPABASE JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- LOGIQUE DE L'APPLICATION -->
+  <script src="app.js"></script>
+</body>
+</html>
