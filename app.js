@@ -1,950 +1,264 @@
 /**
- * STAR ACADEMY - APPLICATION DE SUIVI iOS PWA
- * Gestion de l'état, de l'authentification Supabase, des Primes, Notes & Pronostics.
+ * STAR ACADEMY - APPLICATION COMPLETE DE SUIVI iOS PWA
+ * Évaluations, Primes, Primes passés, Classement glisser/déposer, Stats & Gestion modérateur.
  */
 
 // Configuration Supabase
 const SUPABASE_URL = "https://zufllaamwiurbapoygwq.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_X0jNnbaK34Z4xD0Ek7DnXA_6dsHdqb4";
 
-// Initialisation du client Supabase
 let supabaseClient = null;
 if (typeof supabase !== 'undefined') {
   supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// Données de secours / initiales (au cas où les tables Supabase ne sont pas encore créées)
+// Données initiales des candidats
 const DEFAULT_CANDIDATES = [
-  { id: 'marine', first_name: 'Marine', last_name: 'Delplace', age: 24, city: 'Lille', status: 'active', bio: 'Chanteuse à la voix puissante, étudiante en chirurgie dentaire.', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' },
-  { id: 'ebony', first_name: 'Ebony', last_name: 'Cham', age: 20, city: 'L\'Île-Saint-Denis', status: 'active', bio: 'Artiste complète, fille d\'artiste, passionnée de soul et RnB.', photo_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80' },
-  { id: 'charles', first_name: 'Charles', last_name: 'Coste', age: 18, city: 'Pléneuf-Val-André', status: 'active', bio: 'Jeune prodige de la chanson française et du chant classique.', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
-  { id: 'franck', first_name: 'Franck', last_name: 'Diakhaby', age: 22, city: 'Bagneux', status: 'active', bio: 'Voix gospel envoûtante, sensible et charismatique.', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80' },
-  { id: 'marguerite', first_name: 'Marguerite', last_name: 'Boucher', age: 23, city: 'Paris', status: 'active', bio: 'Univers pop poétique théâtral et haute en couleur.', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
-  { id: 'maia', first_name: 'Maïa', last_name: 'Kopania', age: 21, city: 'Valence', status: 'nominated', bio: 'Énergie communicative, grande force émotionnelle et passion.', photo_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80' },
-  { id: 'ulysse', first_name: 'Ulysse', last_name: 'Mars', age: 24, city: 'Marseille', status: 'nominated', bio: 'Âme de rocker au timbre éraillé et sensibilité à fleur de peau.', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80' },
-  { id: 'julie', first_name: 'Julie', last_name: 'Neveu', age: 19, city: 'Suisse', status: 'active', bio: 'Grande technicienne vocale au répertoire musical international.', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80' },
-  { id: 'masseo', first_name: 'Masséo', last_name: 'Dufour', age: 18, city: 'Soullans', status: 'nominated', bio: 'Danseur et chanteur pop ultra talentueux et perfectionniste.', photo_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80' },
-  { id: 'thomas', first_name: 'Thomas', last_name: 'Bernard', age: 21, city: 'Leuville', status: 'eliminated', bio: 'Tonalité chaude et générosité musicale sur scène.', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80' },
-  { id: 'emma', first_name: 'Emma', last_name: 'Perrier', age: 22, city: 'Lesquin', status: 'eliminated', bio: 'Énergie pop explosive, showgirl et présence scénique incroyable.', photo_url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=400&q=80' },
-  { id: 'noah', first_name: 'Noah', last_name: 'Guerin', age: 20, city: 'Carcassonne', status: 'eliminated', bio: 'Musicien autodidacte, grain de voix unique.', photo_url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80' },
-  { id: 'paul', first_name: 'Paul', last_name: 'Miles', age: 23, city: 'Vannes', status: 'eliminated', bio: 'Personnalité flamboyante et style dandy rock glam.', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80' },
-  { id: 'maylis', first_name: 'Maylis', last_name: 'Bort', age: 23, city: 'Belgique', status: 'eliminated', bio: 'Douceur électro-pop et compositions inspirantes.', photo_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80' }
-];
-
-const DEFAULT_PRIMES = [
-  { id: 1, week_number: 1, title: 'Prime 1 - Le Grand Lancement', is_active: false },
-  { id: 2, week_number: 2, title: 'Prime 2 - Première Épreuve', is_active: false },
-  { id: 3, week_number: 3, title: 'Prime 3 - Tous Chœur Philharmonique', is_active: false },
-  { id: 4, week_number: 4, title: 'Prime 4 - Comédies Musicales', is_active: false },
-  { id: 5, week_number: 5, title: 'Prime 5 - Soirée Spéciale Évaluations', is_active: true },
-  { id: 6, week_number: 6, title: 'Prime 6 - Carte Blanche aux Élèves', is_active: false },
-  { id: 7, week_number: 7, title: 'Prime 7 - La Tournée en Ligne de Mire', is_active: false },
-  { id: 8, week_number: 8, title: 'Prime 8 - La Demi-Finale', is_active: false },
-  { id: 9, week_number: 9, title: 'Prime 9 - La Grande Finale', is_active: false }
+  { id: 'marine', first_name: 'Marine', last_name: 'Delplace', age: 24, city: 'Lille', status: 'active', photo_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' },
+  { id: 'ebony', first_name: 'Ebony', last_name: 'Cham', age: 20, city: 'L\'Île-Saint-Denis', status: 'active', photo_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80' },
+  { id: 'charles', first_name: 'Charles', last_name: 'Coste', age: 18, city: 'Pléneuf-Val-André', status: 'active', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80' },
+  { id: 'franck', first_name: 'Franck', last_name: 'Diakhaby', age: 22, city: 'Bagneux', status: 'active', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80' },
+  { id: 'marguerite', first_name: 'Marguerite', last_name: 'Boucher', age: 23, city: 'Paris', status: 'active', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80' },
+  { id: 'maia', first_name: 'Maïa', last_name: 'Kopania', age: 21, city: 'Valence', status: 'active', photo_url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80' },
+  { id: 'ulysse', first_name: 'Ulysse', last_name: 'Mars', age: 24, city: 'Marseille', status: 'active', photo_url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80' },
+  { id: 'julie', first_name: 'Julie', last_name: 'Neveu', age: 19, city: 'Suisse', status: 'active', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80' },
+  { id: 'masseo', first_name: 'Masséo', last_name: 'Dufour', age: 18, city: 'Soullans', status: 'active', photo_url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80' },
+  { id: 'thomas', first_name: 'Thomas', last_name: 'Bernard', age: 21, city: 'Leuville', status: 'eliminated', photo_url: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80' },
+  { id: 'emma', first_name: 'Emma', last_name: 'Perrier', age: 22, city: 'Lesquin', status: 'eliminated', photo_url: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=400&q=80' },
+  { id: 'noah', first_name: 'Noah', last_name: 'Guerin', age: 20, city: 'Carcassonne', status: 'eliminated', photo_url: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80' },
+  { id: 'paul', first_name: 'Paul', last_name: 'Miles', age: 23, city: 'Vannes', status: 'eliminated', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80' },
+  { id: 'maylis', first_name: 'Maylis', last_name: 'Bort', age: 23, city: 'Belgique', status: 'eliminated', photo_url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80' }
 ];
 
 // État Global de l'application
 const AppState = {
   currentUser: null,
   profile: null,
-  candidates: [...DEFAULT_CANDIDATES],
-  primes: [...DEFAULT_PRIMES],
-  userRatings: [],
-  userFavorites: new Set(),
-  userPredictions: {},
-  activeFilter: 'all',
-  activeSearch: '',
-  activeTab: 'home',
-  selectedCandidateForModal: null,
+  isModerator: false,
   isAuthModeSignUp: false,
-  isSupabaseDbReady: false
+  activeTab: 'evaluations',
+
+  // Données
+  candidates: [...DEFAULT_CANDIDATES],
+  evaluations: [],      // array of evaluation objects
+  primes: [],           // array of prime objects
+  performances: [],     // array of performance objects
+  weeklyRankings: {},   // { weekNumber: [candId1, candId2, ...] }
+
+  // État onglet Évaluations
+  selectedEvalWeek: 1,
+  
+  // État onglet Prime
+  selectedPrimeWeek: 1,
+  currentPrimeGuests: [],
+  currentPrimeGate217: [],
+  perfSelectedCandidates: new Set(),
+  perfSelectedGuests: new Set(),
+  perfMedleySongs: [],
+
+  // État onglet Classement
+  selectedRankingWeek: 1,
+  pendingRankingToSave: null,
+  sortableInstance: null,
+
+  // État onglet Stats
+  statsPeriod: 'global',
+  statsViewRankMode: 'personal',
+  statsSelectedCandidateId: null
 };
 
-// Initialisation au chargement de la page
+// ============================================================
+// INITIALISATION DE L'APPLICATION
+// ============================================================
 window.addEventListener('DOMContentLoaded', async () => {
   setupPWA();
-  setupCountdownTimer();
-  await initSupabaseAuth();
-  await loadAppData();
-  renderApp();
-  checkIfStandalone();
+  initWeekSelects();
+  await initAuth();
 });
 
-// Enregistrement du Service Worker PWA
 function setupPWA() {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => console.log('Service Worker enregistré:', reg.scope))
-        .catch((err) => console.warn('Service Worker non enregistré:', err));
-    });
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }
 
-// Détection si l'application est déjà lancée en mode écran d'accueil (standalone iOS)
-function checkIfStandalone() {
-  const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-  const promptBox = document.getElementById('ios-prompt-box');
-  if (promptBox && isStandalone) {
-    promptBox.style.display = 'none';
-  }
+// Calcul automatique de la semaine actuelle de la saison
+function getCurrentSeasonWeek() {
+  // Lancement mi-octobre 2024
+  const startDate = new Date('2024-10-12T00:00:00');
+  const now = new Date();
+  const diffTime = Math.max(0, now - startDate);
+  const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7)) + 1;
+  return Math.min(Math.max(diffWeeks, 1), 12);
 }
 
-// -------------------------------------------------------------
-// GESTION DU COMPTE À REBOURS DU PRIME (Samedi 21h10)
-// -------------------------------------------------------------
-function setupCountdownTimer() {
-  function getNextSaturdayPrime() {
-    const now = new Date();
-    const target = new Date(now);
-    // Jour de la semaine : 0=dimanche, 6=samedi
-    const day = now.getDay();
-    let diff = (6 - day + 7) % 7;
-    // Si c'est déjà samedi et passé 23h30, viser le samedi suivant
-    if (diff === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 30))) {
-      diff = 7;
+function initWeekSelects() {
+  const currentWeek = getCurrentSeasonWeek();
+  AppState.selectedEvalWeek = currentWeek;
+  AppState.selectedPrimeWeek = currentWeek;
+  AppState.selectedRankingWeek = currentWeek;
+
+  const weekSelectIds = ['eval-week-select', 'prime-week-select', 'ranking-week-select'];
+  weekSelectIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Semaine ${i} ${i === currentWeek ? '(Actuelle)' : ''}`;
+      if (i === currentWeek) opt.selected = true;
+      el.appendChild(opt);
     }
-    target.setDate(now.getDate() + diff);
-    target.setHours(21, 10, 0, 0); // 21h10 heure de diffusion du Prime
-    return target;
-  }
+  });
 
-  function update() {
-    const now = new Date();
-    const target = getNextSaturdayPrime();
-    const distance = target - now;
-
-    const cdDays = document.getElementById('cd-days');
-    const cdHours = document.getElementById('cd-hours');
-    const cdMins = document.getElementById('cd-mins');
-    const cdSecs = document.getElementById('cd-secs');
-    const statusText = document.getElementById('countdown-status-text');
-
-    if (distance <= 0 && distance > - (3 * 3600 * 1000)) {
-      // En cours de direct !
-      if (statusText) statusText.textContent = "EN DIRECT MAINTENANT SUR TF1 !";
-      if (cdDays) cdDays.textContent = "00";
-      if (cdHours) cdHours.textContent = "00";
-      if (cdMins) cdMins.textContent = "00";
-      if (cdSecs) cdSecs.textContent = "00";
-      return;
+  // Sélecteur de période dans l'onglet Stats
+  const statsPeriodSelect = document.getElementById('stats-period-select');
+  if (statsPeriodSelect) {
+    for (let i = 1; i <= 12; i++) {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Semaine ${i}`;
+      statsPeriodSelect.appendChild(opt);
     }
-
-    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const secs = Math.floor((distance % (1000 * 60)) / 1000);
-
-    if (cdDays) cdDays.textContent = String(days).padStart(2, '0');
-    if (cdHours) cdHours.textContent = String(hours).padStart(2, '0');
-    if (cdMins) cdMins.textContent = String(mins).padStart(2, '0');
-    if (cdSecs) cdSecs.textContent = String(secs).padStart(2, '0');
   }
 
-  update();
-  setInterval(update, 1000);
+  const evalBadge = document.getElementById('eval-week-badge');
+  if (evalBadge) evalBadge.textContent = `Semaine ${currentWeek}`;
 }
 
-// -------------------------------------------------------------
-// GESTION AUTHENTIFICATION SUPABASE
-// -------------------------------------------------------------
-async function initSupabaseAuth() {
-  if (!supabaseClient) return;
+// ============================================================
+// AUTHENTIFICATION (GESTION ÉCRAN DÉCONNECTÉ vs APPLICATION)
+// ============================================================
+async function initAuth() {
+  if (!supabaseClient) {
+    showAuthScreen();
+    return;
+  }
 
   try {
-    // Vérification de la session en cours
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
     if (session && session.user) {
-      AppState.currentUser = session.user;
-      await fetchUserProfile(session.user.id);
+      await handleUserLoggedIn(session.user);
+    } else {
+      showAuthScreen();
     }
 
-    // Écoute des changements d'état d'authentification
     supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (session && session.user) {
-        AppState.currentUser = session.user;
-        await fetchUserProfile(session.user.id);
-        await loadUserData();
+        await handleUserLoggedIn(session.user);
       } else {
-        AppState.currentUser = null;
-        AppState.profile = null;
-        loadLocalUserData();
+        showAuthScreen();
       }
-      updateAuthUI();
-      renderApp();
     });
   } catch (err) {
-    console.warn("Session check fallback:", err);
-    loadLocalUserData();
+    console.warn("Auth initialization fallback:", err);
+    showAuthScreen();
   }
 }
 
-async function fetchUserProfile(userId) {
-  if (!supabaseClient) return;
+async function handleUserLoggedIn(user) {
+  AppState.currentUser = user;
+
+  // Récupérer le profil Supabase
   try {
-    const { data, error } = await supabaseClient
+    const { data: profile } = await supabaseClient
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user.id)
       .maybeSingle();
 
-    if (data) {
-      AppState.profile = data;
+    if (profile) {
+      AppState.profile = profile;
     } else {
       AppState.profile = {
-        username: AppState.currentUser.email ? AppState.currentUser.email.split('@')[0] : 'StarFan',
-        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${userId}`
+        username: user.email.split('@')[0],
+        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${user.id}`,
+        role: 'user'
       };
     }
   } catch (e) {
-    console.warn("Could not fetch profile:", e);
+    AppState.profile = { username: user.email.split('@')[0], role: 'user' };
   }
+
+  // Vérification du rôle modérateur
+  const username = (AppState.profile?.username || '').toLowerCase();
+  const email = (user.email || '').toLowerCase();
+  AppState.isModerator = (
+    AppState.profile?.role === 'moderator' ||
+    AppState.profile?.role === 'admin' ||
+    username === 'leanneba' ||
+    username === 'leanne' ||
+    email.includes('basin')
+  );
+
+  // Affichage de l'application & masquage de l'écran d'authentification
+  showAppScreen();
+
+  // Chargement des données utilisateur
+  await loadAllData();
+  renderAllViews();
 }
 
-// -------------------------------------------------------------
-// CHARGEMENT DES DONNÉES (Supabase & Local)
-// -------------------------------------------------------------
-async function loadAppData() {
-  // 1. Tenter de charger les candidats depuis Supabase
-  if (supabaseClient) {
-    try {
-      const { data, error } = await supabaseClient.from('candidates').select('*').order('first_name');
-      if (!error && data && data.length > 0) {
-        AppState.candidates = data;
-        AppState.isSupabaseDbReady = true;
-      } else if (error && error.code === 'PGRST205') {
-        // Table does not exist in schema cache yet
-        AppState.isSupabaseDbReady = false;
-        showDbAlertBanner(true);
-      }
-    } catch (err) {
-      console.warn("Supabase candidates fetch error, using defaults:", err);
-      showDbAlertBanner(true);
-    }
+function showAuthScreen() {
+  AppState.currentUser = null;
+  AppState.profile = null;
+  AppState.isModerator = false;
 
-    // 2. Tenter de charger les primes depuis Supabase
-    try {
-      const { data, error } = await supabaseClient.from('primes').select('*').order('week_number');
-      if (!error && data && data.length > 0) {
-        AppState.primes = data;
-      }
-    } catch (err) {
-      console.warn("Supabase primes fetch error:", err);
-    }
-  }
+  const authContainer = document.getElementById('auth-fullscreen-container');
+  const appContainer = document.getElementById('app-container');
 
-  // 3. Charger les données utilisateur (favoris, notes, pronostics)
-  if (AppState.currentUser && AppState.isSupabaseDbReady) {
-    await loadUserData();
-  } else {
-    loadLocalUserData();
-  }
+  if (authContainer) authContainer.style.display = 'flex';
+  if (appContainer) appContainer.style.display = 'none';
 }
 
-async function loadUserData() {
-  if (!supabaseClient || !AppState.currentUser) return;
-  const userId = AppState.currentUser.id;
+function showAppScreen() {
+  const authContainer = document.getElementById('auth-fullscreen-container');
+  const appContainer = document.getElementById('app-container');
 
-  try {
-    // Favoris
-    const { data: favs } = await supabaseClient.from('user_favorites').select('candidate_id').eq('user_id', userId);
-    if (favs) {
-      AppState.userFavorites = new Set(favs.map(f => f.candidate_id));
-    }
+  if (authContainer) authContainer.style.display = 'none';
+  if (appContainer) appContainer.style.display = 'flex';
 
-    // Notes
-    const { data: ratings } = await supabaseClient.from('user_ratings').select('*').eq('user_id', userId).order('created_at', { ascending: false });
-    if (ratings) {
-      AppState.userRatings = ratings;
-    }
+  // Mise à jour du header
+  const headerName = document.getElementById('header-username');
+  const headerAvatar = document.getElementById('header-avatar');
+  if (headerName) headerName.textContent = AppState.profile?.username || AppState.currentUser?.email?.split('@')[0];
+  if (headerAvatar) headerAvatar.src = AppState.profile?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${AppState.currentUser?.id}`;
 
-    // Pronostics
-    const { data: preds } = await supabaseClient.from('user_predictions').select('*').eq('user_id', userId);
-    if (preds && preds.length > 0) {
-      AppState.userPredictions = preds[0];
-    }
-  } catch (err) {
-    console.warn("Error loading user data from Supabase, fallback local:", err);
-    loadLocalUserData();
+  // Affichage du bouton Gestion pour les modérateurs
+  const modTabBtn = document.getElementById('tab-btn-settings');
+  if (modTabBtn) {
+    modTabBtn.style.display = AppState.isModerator ? 'flex' : 'none';
   }
-}
-
-function loadLocalUserData() {
-  // Stockage local pour mode invité ou hors-ligne
-  const localFavs = localStorage.getItem('star_ac_favorites');
-  if (localFavs) {
-    try { AppState.userFavorites = new Set(JSON.parse(localFavs)); } catch (e) {}
-  }
-
-  const localRatings = localStorage.getItem('star_ac_ratings');
-  if (localRatings) {
-    try { AppState.userRatings = JSON.parse(localRatings); } catch (e) {}
-  }
-
-  const localPreds = localStorage.getItem('star_ac_predictions');
-  if (localPreds) {
-    try { AppState.userPredictions = JSON.parse(localPreds); } catch (e) {}
-  }
-}
-
-function saveLocalUserData() {
-  localStorage.setItem('star_ac_favorites', JSON.stringify(Array.from(AppState.userFavorites)));
-  localStorage.setItem('star_ac_ratings', JSON.stringify(AppState.userRatings));
-  localStorage.setItem('star_ac_predictions', JSON.stringify(AppState.userPredictions));
-}
-
-function showDbAlertBanner(show) {
-  const banner = document.getElementById('db-alert-banner');
-  if (banner) {
-    if (show) banner.classList.remove('hidden');
-    else banner.classList.add('hidden');
-  }
-}
-
-// -------------------------------------------------------------
-// NAVIGATION PAR ONGLETS (iOS TABS)
-// -------------------------------------------------------------
-function switchTab(tabId) {
-  AppState.activeTab = tabId;
-
-  // Activer le bon conteneur
-  document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
-  const targetPane = document.getElementById(`tab-${tabId}`);
-  if (targetPane) targetPane.classList.add('active');
-
-  // Activer le bon bouton du tab bar
-  const tabNames = ['home', 'candidates', 'primes', 'predictions', 'profile'];
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  tabBtns.forEach((btn, index) => {
-    if (tabNames[index] === tabId) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-
-  // Défilement doux vers le haut lors du changement d'onglet
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Rafraîchir les données de l'onglet actif
-  if (tabId === 'home') renderHomeTab();
-  if (tabId === 'candidates') renderCandidatesTab();
-  if (tabId === 'primes') renderPrimesTab();
-  if (tabId === 'predictions') renderPredictionsTab();
-  if (tabId === 'profile') renderProfileTab();
-}
-
-// -------------------------------------------------------------
-// RENDU DE L'APPLICATION
-// -------------------------------------------------------------
-function renderApp() {
-  updateAuthUI();
-  renderHomeTab();
-  renderCandidatesTab();
-  renderPrimesTab();
-  renderPredictionsTab();
-  renderProfileTab();
-}
-
-function updateAuthUI() {
-  const headerBtn = document.getElementById('auth-header-btn');
-  const btnLabel = document.getElementById('auth-btn-label');
-  const mainAuthBtn = document.getElementById('auth-main-action-btn');
-  const profileName = document.getElementById('user-profile-name');
-  const profileEmail = document.getElementById('user-profile-email');
-  const profileAvatar = document.getElementById('user-profile-avatar');
-
-  if (AppState.currentUser) {
-    const name = (AppState.profile && AppState.profile.username) || AppState.currentUser.email.split('@')[0];
-    const avatar = (AppState.profile && AppState.profile.avatar_url) || `https://api.dicebear.com/7.x/bottts/svg?seed=${AppState.currentUser.id}`;
-    
-    if (btnLabel) btnLabel.textContent = name;
-    if (profileName) profileName.textContent = name;
-    if (profileEmail) profileEmail.textContent = AppState.currentUser.email;
-    if (profileAvatar) profileAvatar.src = avatar;
-
-    if (mainAuthBtn) {
-      mainAuthBtn.textContent = "Se déconnecter";
-      mainAuthBtn.onclick = handleSignOut;
-    }
-  } else {
-    if (btnLabel) btnLabel.textContent = "Se connecter";
-    if (profileName) profileName.textContent = "Mode Démo / Invité";
-    if (profileEmail) profileEmail.textContent = "Connectez-vous pour synchroniser vos données";
-    if (profileAvatar) profileAvatar.src = "icons/favicon.png";
-
-    if (mainAuthBtn) {
-      mainAuthBtn.textContent = "Se connecter / Créer un compte";
-      mainAuthBtn.onclick = openAuthModal;
-    }
-  }
-}
-
-// 1. Rendu Onglet Accueil
-function renderHomeTab() {
-  // Nominés
-  const nominees = AppState.candidates.filter(c => c.status === 'nominated');
-  const nomineesContainer = document.getElementById('home-nominees-container');
-  if (nomineesContainer) {
-    if (nominees.length === 0) {
-      nomineesContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 10px;">Aucun élève nommé pour le moment !</div>`;
-    } else {
-      nomineesContainer.innerHTML = nominees.map(c => `
-        <div class="nominee-card" onclick="openCandidateDetail('${c.id}')">
-          <span class="nominee-badge-tag">Nommé</span>
-          <img class="nominee-avatar" src="${c.photo_url || 'icons/favicon.png'}" alt="${c.first_name}">
-          <span class="nominee-name">${c.first_name}</span>
-          <button class="nominee-action-btn" onclick="event.stopPropagation(); switchTab('predictions')">Pronostiquer</button>
-        </div>
-      `).join('');
-    }
-  }
-
-  // Statistiques
-  const favCountEl = document.getElementById('stat-fav-count');
-  const ratingsCountEl = document.getElementById('stat-ratings-count');
-  const avgScoreEl = document.getElementById('stat-avg-score');
-
-  if (favCountEl) favCountEl.textContent = AppState.userFavorites.size;
-  if (ratingsCountEl) ratingsCountEl.textContent = AppState.userRatings.length;
-
-  if (avgScoreEl) {
-    if (AppState.userRatings.length > 0) {
-      const sum = AppState.userRatings.reduce((acc, r) => acc + parseFloat(r.score || 0), 0);
-      const avg = (sum / AppState.userRatings.length).toFixed(1);
-      avgScoreEl.textContent = `${avg}/20`;
-    } else {
-      avgScoreEl.textContent = `--/20`;
-    }
-  }
-
-  // Coup de cœur (Favoris)
-  const favsContainer = document.getElementById('home-favorites-container');
-  if (favsContainer) {
-    const favoriteCandidates = AppState.candidates.filter(c => AppState.userFavorites.has(c.id));
-    if (favoriteCandidates.length === 0) {
-      favsContainer.innerHTML = `
-        <div style="grid-column: 1 / -1; background: var(--bg-card); padding: 16px; border-radius: var(--radius-md); text-align: center; border: 1px dashed var(--border-subtle); color: var(--text-secondary); font-size: 0.85rem;">
-          Vous n'avez pas encore de coup de cœur ⭐<br>
-          <span style="color: var(--gold-mid); cursor: pointer; font-weight: 700;" onclick="switchTab('candidates')">Explorer les élèves de la promo &rarr;</span>
-        </div>
-      `;
-    } else {
-      favsContainer.innerHTML = favoriteCandidates.slice(0, 4).map(c => renderCandidateCard(c)).join('');
-    }
-  }
-}
-
-// 2. Rendu Onglet Candidats
-function renderCandidatesTab() {
-  const container = document.getElementById('candidates-grid-container');
-  if (!container) return;
-
-  let filtered = AppState.candidates;
-
-  // Filtrage par statut
-  if (AppState.activeFilter === 'active') {
-    filtered = filtered.filter(c => c.status === 'active');
-  } else if (AppState.activeFilter === 'nominated') {
-    filtered = filtered.filter(c => c.status === 'nominated');
-  } else if (AppState.activeFilter === 'eliminated') {
-    filtered = filtered.filter(c => c.status === 'eliminated');
-  } else if (AppState.activeFilter === 'favorites') {
-    filtered = filtered.filter(c => AppState.userFavorites.has(c.id));
-  }
-
-  // Filtrage par recherche
-  if (AppState.activeSearch.trim()) {
-    const query = AppState.activeSearch.toLowerCase();
-    filtered = filtered.filter(c => 
-      c.first_name.toLowerCase().includes(query) || 
-      (c.last_name && c.last_name.toLowerCase().includes(query)) ||
-      (c.city && c.city.toLowerCase().includes(query))
-    );
-  }
-
-  if (filtered.length === 0) {
-    container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 30px 0;">Aucun élève trouvé avec ces critères.</div>`;
-    return;
-  }
-
-  container.innerHTML = filtered.map(c => renderCandidateCard(c)).join('');
-}
-
-function renderCandidateCard(c) {
-  const isFav = AppState.userFavorites.has(c.id);
-  const statusLabel = c.status === 'nominated' ? 'Nommé(e)' : (c.status === 'eliminated' ? 'Éliminé(e)' : 'En lice');
-  const statusClass = c.status === 'nominated' ? 'status-nominated' : (c.status === 'eliminated' ? 'status-eliminated' : 'status-active');
-
-  // Calcul moyenne personnelle pour cet élève
-  const candRatings = AppState.userRatings.filter(r => r.candidate_id === c.id);
-  let scoreBadge = '';
-  if (candRatings.length > 0) {
-    const sum = candRatings.reduce((acc, r) => acc + parseFloat(r.score || 0), 0);
-    const avg = (sum / candRatings.length).toFixed(1);
-    scoreBadge = `<span class="rating-score">★ ${avg}/20</span>`;
-  } else {
-    scoreBadge = `<span style="color: var(--text-muted); font-size: 0.7rem;">Pas encore noté</span>`;
-  }
-
-  return `
-    <div class="candidate-card ${isFav ? 'is-favorite' : ''}" onclick="openCandidateDetail('${c.id}')">
-      <div class="candidate-img-wrap">
-        <img class="candidate-img" src="${c.photo_url || 'icons/favicon.png'}" alt="${c.first_name}" loading="lazy">
-        <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavorite('${c.id}')" title="Favori">
-          <svg viewBox="0 0 24 24">
-            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
-          </svg>
-        </button>
-        <span class="candidate-status-tag ${statusClass}">${statusLabel}</span>
-      </div>
-      <div class="candidate-info">
-        <span class="candidate-title">${c.first_name} ${c.last_name || ''}</span>
-        <span class="candidate-meta">${c.age ? c.age + ' ans' : ''} ${c.city ? '• ' + c.city : ''}</span>
-        <div class="candidate-rating-bar">
-          ${scoreBadge}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function filterCandidates(filterType, btnEl) {
-  AppState.activeFilter = filterType;
-  document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
-  if (btnEl) btnEl.classList.add('active');
-  renderCandidatesTab();
-}
-
-function handleCandidateSearch(val) {
-  AppState.activeSearch = val;
-  renderCandidatesTab();
-}
-
-// 3. Rendu Onglet Primes & Live Notes
-function renderPrimesTab() {
-  const primeSelect = document.getElementById('rating-prime-select');
-  const candidateSelect = document.getElementById('rating-candidate-select');
-
-  // Peupler le sélecteur de Primes
-  if (primeSelect && primeSelect.options.length <= 1) {
-    primeSelect.innerHTML = AppState.primes.map(p => `
-      <option value="${p.id}" ${p.is_active ? 'selected' : ''}>${p.title}</option>
-    `).join('');
-  }
-
-  // Peupler le sélecteur de Candidats (Élèves en lice ou nommés en priorité)
-  if (candidateSelect && candidateSelect.options.length <= 1) {
-    candidateSelect.innerHTML = AppState.candidates.map(c => `
-      <option value="${c.id}">${c.first_name} ${c.last_name || ''} (${c.status === 'eliminated' ? 'Éliminé' : 'En lice'})</option>
-    `).join('');
-  }
-
-  // Rendu de l'historique des notes
-  const historyContainer = document.getElementById('ratings-history-container');
-  if (historyContainer) {
-    if (AppState.userRatings.length === 0) {
-      historyContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 14px; text-align: center; background: var(--bg-card); border-radius: var(--radius-md);">Vous n'avez pas encore attribué de notes. Profitez du Prime de samedi pour noter les prestations !</div>`;
-    } else {
-      historyContainer.innerHTML = AppState.userRatings.map(r => {
-        const cand = AppState.candidates.find(c => c.id === r.candidate_id) || { first_name: 'Élève', photo_url: 'icons/favicon.png' };
-        return `
-          <div class="rating-item-card">
-            <div class="rating-item-left">
-              <img class="rating-item-avatar" src="${cand.photo_url || 'icons/favicon.png'}" alt="${cand.first_name}">
-              <div>
-                <div class="rating-item-name">${cand.first_name}</div>
-                <div class="rating-item-song">${r.song_title ? '🎵 ' + r.song_title : 'Prestation prime'}</div>
-                ${r.comment ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">« ${r.comment} »</div>` : ''}
-              </div>
-            </div>
-            <div class="rating-item-badge">${parseFloat(r.score).toFixed(1)}/20</div>
-          </div>
-        `;
-      }).join('');
-    }
-  }
-}
-
-function updateScoreDisplay(val) {
-  const scoreNum = parseFloat(val);
-  const display = document.getElementById('live-score-display');
-  const appreciation = document.getElementById('live-score-appreciation');
-
-  if (display) display.textContent = scoreNum.toFixed(1);
-
-  if (appreciation) {
-    if (scoreNum >= 18) appreciation.textContent = "Exceptionnel ! Moment de grâce 🌟";
-    else if (scoreNum >= 16) appreciation.textContent = "Prestation remarquable, digne d'un pro ✨";
-    else if (scoreNum >= 14) appreciation.textContent = "Très bonne performance scénique 👍";
-    else if (scoreNum >= 12) appreciation.textContent = "Correct, mais peut aller encore plus loin 👏";
-    else if (scoreNum >= 10) appreciation.textContent = "Juste la moyenne, des faiblesses techniques 😐";
-    else appreciation.textContent = "En difficulté sur ce prime ⚠️";
-  }
-}
-
-async function saveUserRating() {
-  const primeSelect = document.getElementById('rating-prime-select');
-  const candidateSelect = document.getElementById('rating-candidate-select');
-  const songInput = document.getElementById('rating-song-input');
-  const slider = document.getElementById('live-score-slider');
-  const singInput = document.getElementById('rating-sing-input');
-  const danceInput = document.getElementById('rating-dance-input');
-  const commentInput = document.getElementById('rating-comment-input');
-
-  const candidateId = candidateSelect ? candidateSelect.value : null;
-  const primeId = primeSelect ? parseInt(primeSelect.value) : 1;
-  const score = slider ? parseFloat(slider.value) : 15.0;
-  const songTitle = songInput ? songInput.value.trim() : '';
-  const comment = commentInput ? commentInput.value.trim() : '';
-  const singingScore = singInput && singInput.value ? parseFloat(singInput.value) : null;
-  const danceScore = danceInput && danceInput.value ? parseFloat(danceInput.value) : null;
-
-  if (!candidateId) {
-    showToast("Veuillez sélectionner un élève", "error");
-    return;
-  }
-
-  const newRating = {
-    id: 'local_' + Date.now(),
-    candidate_id: candidateId,
-    prime_id: primeId,
-    score: score,
-    singing_score: singingScore,
-    dance_score: danceScore,
-    song_title: songTitle,
-    comment: comment,
-    created_at: new Date().toISOString()
-  };
-
-  // Sauvegarde Supabase si connecté
-  if (supabaseClient && AppState.currentUser && AppState.isSupabaseDbReady) {
-    try {
-      const { data, error } = await supabaseClient.from('user_ratings').insert({
-        user_id: AppState.currentUser.id,
-        candidate_id: candidateId,
-        prime_id: primeId,
-        score: score,
-        singing_score: singingScore,
-        dance_score: danceScore,
-        song_title: songTitle,
-        comment: comment
-      }).select();
-
-      if (error) {
-        console.warn("Supabase insert error, saving locally:", error);
-      } else if (data && data[0]) {
-        newRating.id = data[0].id;
-      }
-    } catch (e) {
-      console.warn("Supabase exception:", e);
-    }
-  }
-
-  // Ajout dans l'état local
-  AppState.userRatings.unshift(newRating);
-  saveLocalUserData();
-
-  // Reset des champs
-  if (songInput) songInput.value = '';
-  if (commentInput) commentInput.value = '';
-  if (singInput) singInput.value = '';
-  if (danceInput) danceInput.value = '';
-
-  showToast(`Note de ${score}/20 enregistrée avec succès ! ⭐`);
-  renderPrimesTab();
-  renderHomeTab();
-  renderProfileTab();
-}
-
-// 4. Rendu Onglet Pronostics
-function renderPredictionsTab() {
-  const publicSelect = document.getElementById('pred-public-select');
-  const studentsSelect = document.getElementById('pred-students-select');
-  const elimSelect = document.getElementById('pred-eliminated-select');
-
-  // Candidats éligibles aux pronostics (les nominés en priorité, sinon tous les élèves actifs)
-  let eligible = AppState.candidates.filter(c => c.status === 'nominated');
-  if (eligible.length === 0) {
-    eligible = AppState.candidates.filter(c => c.status === 'active');
-  }
-
-  const optionsHtml = (selectedId) => `
-    <option value="">Sélectionner un élève</option>
-    ${eligible.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.first_name} ${c.last_name || ''}</option>`).join('')}
-  `;
-
-  if (publicSelect) publicSelect.innerHTML = optionsHtml(AppState.userPredictions.saved_by_public_id);
-  if (studentsSelect) studentsSelect.innerHTML = optionsHtml(AppState.userPredictions.saved_by_students_id);
-  if (elimSelect) elimSelect.innerHTML = optionsHtml(AppState.userPredictions.eliminated_id);
-}
-
-async function saveUserPrediction() {
-  const publicSelect = document.getElementById('pred-public-select');
-  const studentsSelect = document.getElementById('pred-students-select');
-  const elimSelect = document.getElementById('pred-eliminated-select');
-
-  const pubId = publicSelect ? publicSelect.value : null;
-  const stuId = studentsSelect ? studentsSelect.value : null;
-  const elimId = elimSelect ? elimSelect.value : null;
-
-  if (!pubId || !stuId || !elimId) {
-    showToast("Veuillez sélectionner vos 3 pronostics", "error");
-    return;
-  }
-
-  if (pubId === stuId || pubId === elimId || stuId === elimId) {
-    showToast("Veuillez choisir un élève différent pour chaque issue !", "error");
-    return;
-  }
-
-  AppState.userPredictions = {
-    prime_id: 5,
-    saved_by_public_id: pubId,
-    saved_by_students_id: stuId,
-    eliminated_id: elimId
-  };
-
-  // Envoi Supabase si connecté
-  if (supabaseClient && AppState.currentUser && AppState.isSupabaseDbReady) {
-    try {
-      await supabaseClient.from('user_predictions').upsert({
-        user_id: AppState.currentUser.id,
-        prime_id: 5,
-        saved_by_public_id: pubId,
-        saved_by_students_id: stuId,
-        eliminated_id: elimId
-      });
-    } catch (e) {
-      console.warn("Error saving prediction to Supabase:", e);
-    }
-  }
-
-  saveLocalUserData();
-  showToast("Vos pronostics ont été enregistrés ! 🔮");
-}
-
-// 5. Rendu Onglet Profil & Podium
-function renderProfileTab() {
-  // Calcul du classement des élèves selon les notes de l'utilisateur
-  const candidateScores = {};
-  AppState.candidates.forEach(c => {
-    candidateScores[c.id] = { candidate: c, scores: [] };
-  });
-
-  AppState.userRatings.forEach(r => {
-    if (candidateScores[r.candidate_id]) {
-      candidateScores[r.candidate_id].scores.push(parseFloat(r.score));
-    }
-  });
-
-  const rankedList = Object.values(candidateScores)
-    .map(item => {
-      const avg = item.scores.length > 0 
-        ? item.scores.reduce((a, b) => a + b, 0) / item.scores.length 
-        : (AppState.userFavorites.has(item.candidate.id) ? 14 : 10);
-      return { candidate: item.candidate, avgScore: avg, count: item.scores.length };
-    })
-    .sort((a, b) => b.avgScore - a.avgScore);
-
-  // Podium (Top 3)
-  const top1 = rankedList[0];
-  const top2 = rankedList[1];
-  const top3 = rankedList[2];
-
-  if (top1) {
-    const img1 = document.getElementById('podium-1-img');
-    const name1 = document.getElementById('podium-1-name');
-    const score1 = document.getElementById('podium-1-score');
-    if (img1) img1.src = top1.candidate.photo_url || 'icons/favicon.png';
-    if (name1) name1.textContent = top1.candidate.first_name;
-    if (score1) score1.textContent = `${top1.avgScore.toFixed(1)}/20`;
-  }
-
-  if (top2) {
-    const img2 = document.getElementById('podium-2-img');
-    const name2 = document.getElementById('podium-2-name');
-    const score2 = document.getElementById('podium-2-score');
-    if (img2) img2.src = top2.candidate.photo_url || 'icons/favicon.png';
-    if (name2) name2.textContent = top2.candidate.first_name;
-    if (score2) score2.textContent = `${top2.avgScore.toFixed(1)}/20`;
-  }
-
-  if (top3) {
-    const img3 = document.getElementById('podium-3-img');
-    const name3 = document.getElementById('podium-3-name');
-    const score3 = document.getElementById('podium-3-score');
-    if (img3) img3.src = top3.candidate.photo_url || 'icons/favicon.png';
-    if (name3) name3.textContent = top3.candidate.first_name;
-    if (score3) score3.textContent = `${top3.avgScore.toFixed(1)}/20`;
-  }
-
-  // Liste complète du classement
-  const fullRankingContainer = document.getElementById('full-ranking-container');
-  if (fullRankingContainer) {
-    fullRankingContainer.innerHTML = rankedList.map((item, index) => `
-      <div class="rating-item-card" onclick="openCandidateDetail('${item.candidate.id}')">
-        <div class="rating-item-left">
-          <span style="font-weight: 800; color: var(--gold-mid); min-width: 24px; font-size: 1rem;">#${index + 1}</span>
-          <img class="rating-item-avatar" src="${item.candidate.photo_url || 'icons/favicon.png'}" alt="${item.candidate.first_name}">
-          <div>
-            <div class="rating-item-name">${item.candidate.first_name} ${item.candidate.last_name || ''}</div>
-            <div class="rating-item-song">${item.count} prestation(s) notée(s)</div>
-          </div>
-        </div>
-        <div class="rating-item-badge">${item.avgScore.toFixed(1)}/20</div>
-      </div>
-    `).join('');
-  }
-}
-
-// -------------------------------------------------------------
-// GESTION DES FAVORIS (⭐ Clic en direct)
-// -------------------------------------------------------------
-async function toggleFavorite(candidateId) {
-  const isFav = AppState.userFavorites.has(candidateId);
-
-  if (isFav) {
-    AppState.userFavorites.delete(candidateId);
-  } else {
-    AppState.userFavorites.add(candidateId);
-  }
-
-  // Sync Supabase si connecté
-  if (supabaseClient && AppState.currentUser && AppState.isSupabaseDbReady) {
-    try {
-      if (isFav) {
-        await supabaseClient.from('user_favorites').delete().eq('user_id', AppState.currentUser.id).eq('candidate_id', candidateId);
-      } else {
-        await supabaseClient.from('user_favorites').insert({
-          user_id: AppState.currentUser.id,
-          candidate_id: candidateId
-        });
-      }
-    } catch (e) {
-      console.warn("Supabase favorite sync error:", e);
-    }
-  }
-
-  saveLocalUserData();
-  showToast(isFav ? "Retiré des favoris" : "Ajouté à vos étoiles coup de cœur ! ⭐");
-
-  // Re-render
-  renderCandidatesTab();
-  renderHomeTab();
-  updateModalFavButton();
-}
-
-// -------------------------------------------------------------
-// MODALE DÉTAIL CANDIDAT
-// -------------------------------------------------------------
-function openCandidateDetail(candidateId) {
-  const cand = AppState.candidates.find(c => c.id === candidateId);
-  if (!cand) return;
-
-  AppState.selectedCandidateForModal = cand;
-
-  const modal = document.getElementById('candidate-modal');
-  const nameEl = document.getElementById('modal-cand-fullname');
-  const imgEl = document.getElementById('modal-cand-img');
-  const metaEl = document.getElementById('modal-cand-meta');
-  const bioEl = document.getElementById('modal-cand-bio');
-  const statusEl = document.getElementById('modal-cand-status');
-
-  if (nameEl) nameEl.textContent = `${cand.first_name} ${cand.last_name || ''}`;
-  if (imgEl) imgEl.src = cand.photo_url || 'icons/favicon.png';
-  if (metaEl) metaEl.textContent = `${cand.age ? cand.age + ' ans' : ''} ${cand.city ? '• ' + cand.city : ''}`;
-  if (bioEl) bioEl.textContent = cand.bio || 'Élève de la Star Academy.';
-
-  if (statusEl) {
-    const isNom = cand.status === 'nominated';
-    const isElim = cand.status === 'eliminated';
-    statusEl.textContent = isNom ? 'Nommé(e)' : (isElim ? 'Éliminé(e)' : 'En lice');
-    statusEl.className = `candidate-status-tag ${isNom ? 'status-nominated' : (isElim ? 'status-eliminated' : 'status-active')}`;
-  }
-
-  updateModalFavButton();
-
-  if (modal) modal.classList.add('open');
-}
-
-function updateModalFavButton() {
-  const favBtn = document.getElementById('modal-cand-fav-btn');
-  if (favBtn && AppState.selectedCandidateForModal) {
-    const isFav = AppState.userFavorites.has(AppState.selectedCandidateForModal.id);
-    favBtn.textContent = isFav ? "⭐ Retirer des favoris" : "⭐ Ajouter aux favoris";
-  }
-}
-
-function toggleCurrentCandidateFav() {
-  if (AppState.selectedCandidateForModal) {
-    toggleFavorite(AppState.selectedCandidateForModal.id);
-  }
-}
-
-function openRatingForCurrentCandidate() {
-  closeCandidateModal();
-  switchTab('primes');
-  const candSelect = document.getElementById('rating-candidate-select');
-  if (candSelect && AppState.selectedCandidateForModal) {
-    candSelect.value = AppState.selectedCandidateForModal.id;
-  }
-}
-
-function closeCandidateModal() {
-  const modal = document.getElementById('candidate-modal');
-  if (modal) modal.classList.remove('open');
-}
-
-// -------------------------------------------------------------
-// GESTION MODALE AUTHENTIFICATION
-// -------------------------------------------------------------
-function openAuthModal() {
-  if (AppState.currentUser) {
-    switchTab('profile');
-    return;
-  }
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.add('open');
-}
-
-function closeAuthModal() {
-  const modal = document.getElementById('auth-modal');
-  if (modal) modal.classList.remove('open');
 }
 
 function toggleAuthMode() {
   AppState.isAuthModeSignUp = !AppState.isAuthModeSignUp;
-  const title = document.getElementById('auth-modal-title');
+  const subtitle = document.getElementById('auth-screen-subtitle');
+  const usernameField = document.getElementById('auth-username-field');
   const submitBtn = document.getElementById('auth-submit-btn');
   const toggleBtn = document.getElementById('auth-toggle-btn');
-  const usernameGroup = document.getElementById('auth-username-group');
 
   if (AppState.isAuthModeSignUp) {
-    if (title) title.textContent = "Créer un compte";
+    if (subtitle) subtitle.textContent = "Créez votre compte Star Academy pour sauvegarder vos notes et classements.";
+    if (usernameField) usernameField.style.display = 'block';
     if (submitBtn) submitBtn.textContent = "S'inscrire";
     if (toggleBtn) toggleBtn.textContent = "Déjà un compte ? Se connecter";
-    if (usernameGroup) usernameGroup.style.display = 'block';
   } else {
-    if (title) title.textContent = "Connexion";
+    if (subtitle) subtitle.textContent = "Connectez-vous pour accéder à votre espace de suivi des primes et évaluations.";
+    if (usernameField) usernameField.style.display = 'none';
     if (submitBtn) submitBtn.textContent = "Se connecter";
     if (toggleBtn) toggleBtn.textContent = "Pas encore de compte ? S'inscrire";
-    if (usernameGroup) usernameGroup.style.display = 'none';
   }
 }
 
 async function handleAuthSubmit() {
-  const emailInput = document.getElementById('auth-email');
-  const passwordInput = document.getElementById('auth-password');
-  const usernameInput = document.getElementById('auth-username');
-
-  const email = emailInput ? emailInput.value.trim() : '';
-  const password = passwordInput ? passwordInput.value : '';
-  const username = usernameInput ? usernameInput.value.trim() : '';
+  const email = document.getElementById('auth-email')?.value.trim();
+  const password = document.getElementById('auth-password')?.value;
+  const username = document.getElementById('auth-username')?.value.trim();
 
   if (!email || !password) {
-    showToast("Veuillez remplir l'email et le mot de passe", "error");
+    showToast("Veuillez renseigner votre email et mot de passe", "error");
     return;
   }
 
@@ -955,38 +269,23 @@ async function handleAuthSubmit() {
 
   try {
     if (AppState.isAuthModeSignUp) {
-      // Inscription
       const { data, error } = await supabaseClient.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            username: username || email.split('@')[0]
-          }
-        }
+        email,
+        password,
+        options: { data: { username: username || email.split('@')[0] } }
       });
-
       if (error) {
         showToast(error.message, "error");
         return;
       }
-
-      showToast("Compte créé avec succès ! Bienvenue à la Star Ac'");
-      closeAuthModal();
+      showToast("Compte créé avec succès ! Bienvenue à la Star Ac' ✨");
     } else {
-      // Connexion
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) {
         showToast(error.message, "error");
         return;
       }
-
-      showToast("Connexion réussie ! Vos notes sont synchronisées.");
-      closeAuthModal();
+      showToast("Connexion réussie !");
     }
   } catch (err) {
     showToast("Erreur d'authentification : " + err.message, "error");
@@ -997,98 +296,1428 @@ async function handleSignOut() {
   if (supabaseClient) {
     await supabaseClient.auth.signOut();
   }
-  AppState.currentUser = null;
-  AppState.profile = null;
+  showAuthScreen();
   showToast("Vous avez été déconnecté.");
-  renderApp();
 }
 
-// -------------------------------------------------------------
-// GUIDE IPHONE ET MODALE SQL
-// -------------------------------------------------------------
-function openIosGuideModal() {
-  const modal = document.getElementById('ios-guide-modal');
-  if (modal) modal.classList.add('open');
-}
+// ============================================================
+// CHARGEMENT & SYNCHRONISATION DES DONNÉES
+// ============================================================
+async function loadAllData() {
+  const userId = AppState.currentUser?.id;
 
-function closeIosGuideModal() {
-  const modal = document.getElementById('ios-guide-modal');
-  if (modal) modal.classList.remove('open');
-}
+  // 1. Candidats
+  if (supabaseClient) {
+    try {
+      const { data: candData } = await supabaseClient.from('candidates').select('*').order('first_name');
+      if (candData && candData.length > 0) {
+        AppState.candidates = candData;
+      }
+    } catch (e) {}
 
-function openSqlModal() {
-  const modal = document.getElementById('sql-modal');
-  const display = document.getElementById('sql-code-display');
-  if (display) {
-    display.value = `-- EXÉCUTER CE SCRIPT DANS SUPABASE -> SQL EDITOR -> RUN
--- Voir le fichier 'supabase_setup.sql' à la racine du projet pour le script complet !
-CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    username TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Profils publics" ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Gestion perso" ON public.profiles FOR ALL USING (auth.uid() = id);
+    // 2. Évaluations
+    try {
+      const { data: evalData } = await supabaseClient.from('evaluations').select('*').eq('user_id', userId);
+      if (evalData) AppState.evaluations = evalData;
+    } catch (e) {
+      loadLocalState('evaluations');
+    }
 
-CREATE TABLE IF NOT EXISTS public.candidates (
-    id TEXT PRIMARY KEY,
-    first_name TEXT NOT NULL,
-    last_name TEXT,
-    age INT,
-    city TEXT,
-    bio TEXT,
-    photo_url TEXT,
-    status TEXT NOT NULL DEFAULT 'active'
-);
-ALTER TABLE public.candidates ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Candidats lecture" ON public.candidates FOR SELECT USING (true);
+    // 3. Primes
+    try {
+      const { data: primeData } = await supabaseClient.from('primes').select('*').order('week_number');
+      if (primeData) AppState.primes = primeData;
+    } catch (e) {
+      loadLocalState('primes');
+    }
 
-CREATE TABLE IF NOT EXISTS public.user_ratings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    candidate_id TEXT NOT NULL REFERENCES public.candidates(id),
-    prime_id INT,
-    score NUMERIC(4, 1) NOT NULL,
-    song_title TEXT,
-    comment TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-ALTER TABLE public.user_ratings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Notes lecture" ON public.user_ratings FOR SELECT USING (true);
-CREATE POLICY "Notes écriture" ON public.user_ratings FOR ALL USING (auth.uid() = user_id);
+    // 4. Prestations
+    try {
+      const { data: perfData } = await supabaseClient.from('performances').select('*').eq('user_id', userId);
+      if (perfData) AppState.performances = perfData;
+    } catch (e) {
+      loadLocalState('performances');
+    }
 
-CREATE TABLE IF NOT EXISTS public.user_favorites (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    candidate_id TEXT NOT NULL REFERENCES public.candidates(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-ALTER TABLE public.user_favorites ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Favoris perso" ON public.user_favorites FOR ALL USING (auth.uid() = user_id);
-`;
-  }
-  if (modal) modal.classList.add('open');
-}
-
-function closeSqlModal() {
-  const modal = document.getElementById('sql-modal');
-  if (modal) modal.classList.remove('open');
-}
-
-function copySqlToClipboard() {
-  const display = document.getElementById('sql-code-display');
-  if (display) {
-    navigator.clipboard.writeText(display.value)
-      .then(() => showToast("Script SQL copié dans le presse-papiers !"))
-      .catch(() => showToast("Sélectionnez et copiez le texte manuellement."));
+    // 5. Classements hebdomadaires
+    try {
+      const { data: rankData } = await supabaseClient.from('weekly_rankings').select('*').eq('user_id', userId);
+      if (rankData) {
+        AppState.weeklyRankings = {};
+        rankData.forEach(r => {
+          AppState.weeklyRankings[r.week_number] = r.ranked_candidate_ids;
+        });
+      }
+    } catch (e) {
+      loadLocalState('weeklyRankings');
+    }
+  } else {
+    loadAllLocalState();
   }
 }
 
+function loadLocalState(key) {
+  const uid = AppState.currentUser?.id || 'guest';
+  const val = localStorage.getItem(`star_ac_${uid}_${key}`);
+  if (val) {
+    try { AppState[key] = JSON.parse(val); } catch (e) {}
+  }
+}
+
+function saveLocalState(key) {
+  const uid = AppState.currentUser?.id || 'guest';
+  localStorage.setItem(`star_ac_${uid}_${key}`, JSON.stringify(AppState[key]));
+}
+
+function loadAllLocalState() {
+  ['evaluations', 'primes', 'performances', 'weeklyRankings'].forEach(loadLocalState);
+}
+
+// ============================================================
+// NAVIGATION PAR ONGLETS (TABS)
+// ============================================================
+function switchTab(tabName) {
+  if (tabName === 'settings' && !AppState.isModerator) return;
+
+  AppState.activeTab = tabName;
+  document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(`tab-${tabName}`);
+  if (target) target.classList.add('active');
+
+  // Mise à jour de la barre inférieure
+  const tabNames = ['evaluations', 'prime', 'past-primes', 'rankings', 'stats', 'settings'];
+  document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+    if (tabNames[idx] === tabName) btn.classList.add('active');
+    else btn.classList.remove('active');
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Rendu de l'onglet actif
+  if (tabName === 'evaluations') renderEvaluationsTab();
+  if (tabName === 'prime') renderPrimeTab();
+  if (tabName === 'past-primes') renderPastPrimesTab();
+  if (tabName === 'rankings') renderRankingsTab();
+  if (tabName === 'stats') renderStatsTab();
+  if (tabName === 'settings') renderSettingsTab();
+}
+
+function renderAllViews() {
+  populateCandidateSelects();
+  renderEvaluationsTab();
+  renderPrimeTab();
+  renderPastPrimesTab();
+  renderRankingsTab();
+  renderStatsTab();
+  if (AppState.isModerator) renderSettingsTab();
+}
+
+function populateCandidateSelects() {
+  const evalSelect = document.getElementById('eval-candidate-select');
+  const primeElimSelect = document.getElementById('prime-eliminated-select');
+  const statsCandSelect = document.getElementById('stats-candidate-select');
+
+  const activeCandidates = AppState.candidates.filter(c => c.status !== 'eliminated');
+  const allCandidates = AppState.candidates;
+
+  if (evalSelect) {
+    evalSelect.innerHTML = '<option value="">Sélectionner un élève...</option>' +
+      activeCandidates.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name || ''}</option>`).join('');
+  }
+
+  if (primeElimSelect) {
+    primeElimSelect.innerHTML = '<option value="">Aucun / En attente du direct...</option>' +
+      allCandidates.map(c => `<option value="${c.id}">${c.first_name} ${c.last_name || ''} (${c.status === 'eliminated' ? 'Déjà éliminé' : 'En lice'})</option>`).join('');
+  }
+
+  if (statsCandSelect) {
+    statsCandSelect.innerHTML = allCandidates.map((c, i) =>
+      `<option value="${c.id}" ${i === 0 ? 'selected' : ''}>${c.first_name} ${c.last_name || ''}</option>`
+    ).join('');
+    if (allCandidates.length > 0 && !AppState.statsSelectedCandidateId) {
+      AppState.statsSelectedCandidateId = allCandidates[0].id;
+    }
+  }
+}
+
+// ============================================================
+// 1. ONGLET ÉVALUATIONS
+// ============================================================
+function onEvalWeekChange(weekVal) {
+  AppState.selectedEvalWeek = parseInt(weekVal);
+  const badge = document.getElementById('eval-week-badge');
+  if (badge) badge.textContent = `Semaine ${weekVal}`;
+  loadCurrentEvaluationForm();
+  renderWeekEvaluationsList();
+}
+
+function onEvalCandidateChange(candId) {
+  loadCurrentEvaluationForm();
+}
+
+function calculateEvalAverage() {
+  const sing = parseFloat(document.getElementById('eval-singing-score')?.value);
+  const dance = parseFloat(document.getElementById('eval-dance-score')?.value);
+  const theatre = parseFloat(document.getElementById('eval-theatre-score')?.value);
+
+  const scores = [sing, dance, theatre].filter(s => !isNaN(s) && s >= 0 && s <= 20);
+  const avgDisplay = document.getElementById('eval-average-display');
+  const appreciation = document.getElementById('eval-appreciation-text');
+
+  if (scores.length === 0) {
+    if (avgDisplay) avgDisplay.textContent = "-- /20";
+    if (appreciation) appreciation.textContent = "Renseignez les notes pour voir la moyenne";
+    return null;
+  }
+
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  if (avgDisplay) avgDisplay.textContent = `${avg.toFixed(1)} /20`;
+
+  if (appreciation) {
+    if (avg >= 18) appreciation.textContent = "Exceptionnel ! Moment magistral 🌟";
+    else if (avg >= 16) appreciation.textContent = "Très belle prestation, niveau pro ✨";
+    else if (avg >= 14) appreciation.textContent = "Bonne évaluation, solides bases 👍";
+    else if (avg >= 12) appreciation.textContent = "Encourageant, mais perfectible 👏";
+    else if (avg >= 10) appreciation.textContent = "Juste la moyenne, des fragilités 😐";
+    else appreciation.textContent = "Évaluation difficile / Danger nomination ⚠️";
+  }
+
+  return avg;
+}
+
+function loadCurrentEvaluationForm() {
+  const candId = document.getElementById('eval-candidate-select')?.value;
+  const week = AppState.selectedEvalWeek;
+
+  const songTitleEl = document.getElementById('eval-song-title');
+  const songArtistEl = document.getElementById('eval-song-artist');
+  const singEl = document.getElementById('eval-singing-score');
+  const danceEl = document.getElementById('eval-dance-score');
+  const theatreEl = document.getElementById('eval-theatre-score');
+  const reviewEl = document.getElementById('eval-user-review');
+  const feedbackEl = document.getElementById('eval-teachers-feedback');
+
+  if (!candId) {
+    if (songTitleEl) songTitleEl.value = '';
+    if (songArtistEl) songArtistEl.value = '';
+    if (singEl) singEl.value = '';
+    if (danceEl) danceEl.value = '';
+    if (theatreEl) theatreEl.value = '';
+    if (reviewEl) reviewEl.value = '';
+    if (feedbackEl) feedbackEl.value = '';
+    calculateEvalAverage();
+    return;
+  }
+
+  const existing = AppState.evaluations.find(e => e.week_number === week && e.candidate_id === candId);
+  if (existing) {
+    if (songTitleEl) songTitleEl.value = existing.song_title || '';
+    if (songArtistEl) songArtistEl.value = existing.artist || '';
+    if (singEl) singEl.value = existing.singing_score ?? '';
+    if (danceEl) danceEl.value = existing.dance_score ?? '';
+    if (theatreEl) theatreEl.value = existing.theatre_score ?? '';
+    if (reviewEl) reviewEl.value = existing.user_review || '';
+    if (feedbackEl) feedbackEl.value = existing.teachers_feedback || '';
+  } else {
+    if (songTitleEl) songTitleEl.value = '';
+    if (songArtistEl) songArtistEl.value = '';
+    if (singEl) singEl.value = '';
+    if (danceEl) danceEl.value = '';
+    if (theatreEl) theatreEl.value = '';
+    if (reviewEl) reviewEl.value = '';
+    if (feedbackEl) feedbackEl.value = '';
+  }
+  calculateEvalAverage();
+}
+
+async function saveEvaluation() {
+  const candidateId = document.getElementById('eval-candidate-select')?.value;
+  const weekNumber = AppState.selectedEvalWeek;
+
+  if (!candidateId) {
+    showToast("Veuillez sélectionner l'élève évalué *", "error");
+    return;
+  }
+
+  const songTitle = document.getElementById('eval-song-title')?.value.trim() || '';
+  const artist = document.getElementById('eval-song-artist')?.value.trim() || '';
+  const singScore = parseFloat(document.getElementById('eval-singing-score')?.value);
+  const danceScore = parseFloat(document.getElementById('eval-dance-score')?.value);
+  const theatreScore = parseFloat(document.getElementById('eval-theatre-score')?.value);
+  const userReview = document.getElementById('eval-user-review')?.value.trim() || '';
+  const teachersFeedback = document.getElementById('eval-teachers-feedback')?.value.trim() || '';
+
+  const evalPayload = {
+    user_id: AppState.currentUser?.id,
+    week_number: weekNumber,
+    candidate_id: candidateId,
+    song_title: songTitle,
+    artist: artist,
+    singing_score: isNaN(singScore) ? null : singScore,
+    dance_score: isNaN(danceScore) ? null : danceScore,
+    theatre_score: isNaN(theatreScore) ? null : theatreScore,
+    user_review: userReview,
+    teachers_feedback: teachersFeedback
+  };
+
+  if (supabaseClient && AppState.currentUser) {
+    try {
+      await supabaseClient.from('evaluations').upsert(evalPayload, { onConflict: 'user_id, week_number, candidate_id' });
+    } catch (e) {
+      console.warn("Supabase eval save fallback:", e);
+    }
+  }
+
+  // Mise à jour de l'état local
+  const existingIndex = AppState.evaluations.findIndex(e => e.week_number === weekNumber && e.candidate_id === candidateId);
+  if (existingIndex >= 0) {
+    AppState.evaluations[existingIndex] = { ...AppState.evaluations[existingIndex], ...evalPayload };
+  } else {
+    AppState.evaluations.push(evalPayload);
+  }
+  saveLocalState('evaluations');
+
+  const cand = AppState.candidates.find(c => c.id === candidateId);
+  showToast(`Évaluation de ${cand?.first_name || 'l\'élève'} enregistrée ! ⭐`);
+  renderWeekEvaluationsList();
+}
+
+function renderEvaluationsTab() {
+  loadCurrentEvaluationForm();
+  renderWeekEvaluationsList();
+}
+
+function renderWeekEvaluationsList() {
+  const container = document.getElementById('evaluations-week-list');
+  const countBadge = document.getElementById('eval-count-badge');
+  if (!container) return;
+
+  const currentWeekEvals = AppState.evaluations.filter(e => e.week_number === AppState.selectedEvalWeek);
+  if (countBadge) countBadge.textContent = `${currentWeekEvals.length} élève(s)`;
+
+  if (currentWeekEvals.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 18px 0;">Aucune évaluation enregistrée pour la Semaine ${AppState.selectedEvalWeek}.</div>`;
+    return;
+  }
+
+  container.innerHTML = currentWeekEvals.map(e => {
+    const cand = AppState.candidates.find(c => c.id === e.candidate_id) || { first_name: 'Élève', photo_url: 'icons/favicon.png' };
+    const scores = [e.singing_score, e.dance_score, e.theatre_score].filter(s => s !== null && !isNaN(s));
+    const avg = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '--';
+
+    return `
+      <div class="item-card" onclick="selectEvalForEdit('${e.candidate_id}')" style="cursor: pointer;">
+        <div class="item-card-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="${cand.photo_url || 'icons/favicon.png'}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;" alt="">
+            <div>
+              <div class="item-title">${cand.first_name} ${cand.last_name || ''}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${e.song_title ? '🎵 ' + e.song_title + (e.artist ? ' (' + e.artist + ')' : '') : 'Évaluation sans titre'}</div>
+            </div>
+          </div>
+          <div class="item-score-badge">${avg}/20</div>
+        </div>
+        <div style="display: flex; gap: 12px; font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px;">
+          ${e.singing_score !== null ? `<span>Chant: <strong>${e.singing_score}</strong></span>` : ''}
+          ${e.dance_score !== null ? `<span>Danse: <strong>${e.dance_score}</strong></span>` : ''}
+          ${e.theatre_score !== null ? `<span>Théâtre: <strong>${e.theatre_score}</strong></span>` : ''}
+        </div>
+        ${e.user_review ? `<div style="font-size: 0.78rem; color: #FFFFFF; margin-top: 6px; font-style: italic;">« ${e.user_review} »</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function selectEvalForEdit(candidateId) {
+  const candSelect = document.getElementById('eval-candidate-select');
+  if (candSelect) {
+    candSelect.value = candidateId;
+    loadCurrentEvaluationForm();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast("Évaluation chargée pour modification");
+  }
+}
+
+// ============================================================
+// 2. ONGLET PRIME (CONFIGURATION & PRESTATIONS)
+// ============================================================
+function loadPrimeForSelectedWeek(weekVal) {
+  AppState.selectedPrimeWeek = parseInt(weekVal);
+  const week = AppState.selectedPrimeWeek;
+
+  const existingPrime = AppState.primes.find(p => p.week_number === week);
+  const dateInput = document.getElementById('prime-date-input');
+  const themeInput = document.getElementById('prime-theme-input');
+  const elimSelect = document.getElementById('prime-eliminated-select');
+  const reviewText = document.getElementById('prime-overall-review');
+
+  if (existingPrime) {
+    if (dateInput) dateInput.value = existingPrime.date || '';
+    if (themeInput) themeInput.value = existingPrime.theme || '';
+    if (elimSelect) elimSelect.value = existingPrime.eliminated_candidate_id || '';
+    if (reviewText) reviewText.value = existingPrime.overall_review || '';
+    AppState.currentPrimeGuests = Array.isArray(existingPrime.guests) ? [...existingPrime.guests] : [];
+    AppState.currentPrimeGate217 = Array.isArray(existingPrime.gate_217_guests) ? [...existingPrime.gate_217_guests] : [];
+  } else {
+    if (dateInput) dateInput.value = '';
+    if (themeInput) themeInput.value = '';
+    if (elimSelect) elimSelect.value = '';
+    if (reviewText) reviewText.value = '';
+    AppState.currentPrimeGuests = [];
+    AppState.currentPrimeGate217 = [];
+  }
+
+  renderGuestTags('prime');
+  renderGuestTags('gate217');
+  renderPerfGuestChips();
+  renderPrimePerformancesList();
+}
+
+function handleGuestTagInput(event, type) {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    const input = event.target;
+    const val = input.value.trim().replace(',', '');
+    if (!val) return;
+
+    if (type === 'prime') {
+      if (!AppState.currentPrimeGuests.includes(val)) {
+        AppState.currentPrimeGuests.push(val);
+      }
+    } else {
+      if (!AppState.currentPrimeGate217.includes(val)) {
+        AppState.currentPrimeGate217.push(val);
+      }
+    }
+
+    input.value = '';
+    renderGuestTags(type);
+    renderPerfGuestChips();
+  }
+}
+
+function removeGuestTag(index, type) {
+  if (type === 'prime') {
+    AppState.currentPrimeGuests.splice(index, 1);
+  } else {
+    AppState.currentPrimeGate217.splice(index, 1);
+  }
+  renderGuestTags(type);
+  renderPerfGuestChips();
+}
+
+function renderGuestTags(type) {
+  const container = document.getElementById(type === 'prime' ? 'prime-guests-container' : 'prime-gate217-container');
+  const input = document.getElementById(type === 'prime' ? 'prime-guest-input' : 'prime-gate217-input');
+  if (!container || !input) return;
+
+  const list = type === 'prime' ? AppState.currentPrimeGuests : AppState.currentPrimeGate217;
+  const badgesHtml = list.map((g, idx) => `
+    <span class="tag-badge">
+      ${g}
+      <button type="button" class="tag-remove-btn" onclick="removeGuestTag(${idx}, '${type}')">&times;</button>
+    </span>
+  `).join('');
+
+  container.innerHTML = badgesHtml;
+  container.appendChild(input);
+}
+
+async function savePrimeInfo() {
+  const week = AppState.selectedPrimeWeek;
+  const dateVal = document.getElementById('prime-date-input')?.value || null;
+  const themeVal = document.getElementById('prime-theme-input')?.value.trim() || '';
+  const elimVal = document.getElementById('prime-eliminated-select')?.value || null;
+  const reviewVal = document.getElementById('prime-overall-review')?.value.trim() || '';
+
+  const payload = {
+    user_id: AppState.currentUser?.id,
+    week_number: week,
+    title: `Prime Semaine ${week}`,
+    date: dateVal,
+    theme: themeVal,
+    eliminated_candidate_id: elimVal,
+    guests: AppState.currentPrimeGuests,
+    gate_217_guests: AppState.currentPrimeGate217,
+    overall_review: reviewVal
+  };
+
+  if (supabaseClient && AppState.currentUser) {
+    try {
+      const { data } = await supabaseClient.from('primes').upsert(payload, { onConflict: 'user_id, week_number' }).select();
+      if (data && data[0]) payload.id = data[0].id;
+    } catch (e) {
+      console.warn("Supabase prime save fallback:", e);
+    }
+  }
+
+  const existingIdx = AppState.primes.findIndex(p => p.week_number === week);
+  if (existingIdx >= 0) {
+    AppState.primes[existingIdx] = { ...AppState.primes[existingIdx], ...payload };
+  } else {
+    AppState.primes.push(payload);
+  }
+  saveLocalState('primes');
+
+  showToast(`Informations du Prime Semaine ${week} enregistrées ! 🎤`);
+  renderPastPrimesTab();
+}
+
 // -------------------------------------------------------------
-// UTILITAIRE TOASTS iOS
+// PRESTATIONS DU PRIME
 // -------------------------------------------------------------
+function onPerfTypeChange(type) {
+  const medleyCheckWrap = document.getElementById('perf-medley-checkbox-wrap');
+  const medleyCheck = document.getElementById('perf-is-medley');
+  const singleSongWrap = document.getElementById('perf-single-song-wrap');
+  const multiSongWrap = document.getElementById('perf-multi-song-wrap');
+
+  if (type === 'chant') {
+    if (medleyCheckWrap) medleyCheckWrap.style.display = 'block';
+    const isMedley = medleyCheck ? medleyCheck.checked : false;
+    toggleMedleyMode(isMedley);
+  } else if (type === 'autoportrait') {
+    if (medleyCheckWrap) medleyCheckWrap.style.display = 'none';
+    toggleMedleyMode(true);
+  } else {
+    if (medleyCheckWrap) medleyCheckWrap.style.display = 'none';
+    toggleMedleyMode(false);
+  }
+}
+
+function toggleMedleyMode(isMedley) {
+  const singleWrap = document.getElementById('perf-single-song-wrap');
+  const multiWrap = document.getElementById('perf-multi-song-wrap');
+
+  if (isMedley) {
+    if (singleWrap) singleWrap.style.display = 'none';
+    if (multiWrap) multiWrap.style.display = 'block';
+    if (AppState.perfMedleySongs.length === 0) {
+      addMedleySongRow();
+    }
+  } else {
+    if (singleWrap) singleWrap.style.display = 'block';
+    if (multiWrap) multiWrap.style.display = 'none';
+  }
+}
+
+function addMedleySongRow(title = '', artist = '') {
+  AppState.perfMedleySongs.push({ title, artist });
+  renderMedleySongRows();
+}
+
+function removeMedleySongRow(index) {
+  AppState.perfMedleySongs.splice(index, 1);
+  renderMedleySongRows();
+}
+
+function renderMedleySongRows() {
+  const container = document.getElementById('medley-songs-container');
+  if (!container) return;
+
+  container.innerHTML = AppState.perfMedleySongs.map((s, idx) => `
+    <div class="medley-row">
+      <input type="text" class="custom-input" placeholder="Titre chanson ${idx + 1}" value="${s.title}" oninput="AppState.perfMedleySongs[${idx}].title = this.value">
+      <input type="text" class="custom-input" placeholder="Artiste" value="${s.artist}" oninput="AppState.perfMedleySongs[${idx}].artist = this.value">
+      <button type="button" class="medley-remove-btn" onclick="removeMedleySongRow(${idx})">&times;</button>
+    </div>
+  `).join('');
+}
+
+function renderPerfCandidatesGrid() {
+  const container = document.getElementById('perf-candidates-select-grid');
+  if (!container) return;
+
+  container.innerHTML = AppState.candidates.map(c => {
+    const isSelected = AppState.perfSelectedCandidates.has(c.id);
+    return `
+      <div class="candidate-select-chip ${isSelected ? 'selected' : ''}" onclick="togglePerfCandidateSelect('${c.id}')">
+        <img class="candidate-select-avatar" src="${c.photo_url || 'icons/favicon.png'}" alt="${c.first_name}">
+        <span class="candidate-select-name">${c.first_name}</span>
+      </div>
+    `;
+  }).join('');
+
+  renderPerfIndividualRatings();
+}
+
+function togglePerfCandidateSelect(candId) {
+  if (AppState.perfSelectedCandidates.has(candId)) {
+    AppState.perfSelectedCandidates.delete(candId);
+  } else {
+    AppState.perfSelectedCandidates.add(candId);
+  }
+  renderPerfCandidatesGrid();
+}
+
+function renderPerfGuestChips() {
+  const container = document.getElementById('perf-guests-chips-container');
+  if (!container) return;
+
+  const allGuests = [...AppState.currentPrimeGuests, ...AppState.currentPrimeGate217];
+  if (allGuests.length === 0) {
+    container.innerHTML = `<span style="font-size: 0.75rem; color: var(--text-muted);">Aucun invité renseigné pour ce prime.</span>`;
+    return;
+  }
+
+  container.innerHTML = allGuests.map(g => {
+    const isSelected = AppState.perfSelectedGuests.has(g);
+    return `
+      <button type="button" class="filter-pill ${isSelected ? 'active' : ''}" onclick="togglePerfGuestSelect('${g}')">
+        ${g}
+      </button>
+    `;
+  }).join('');
+}
+
+function togglePerfGuestSelect(guestName) {
+  if (AppState.perfSelectedGuests.has(guestName)) {
+    AppState.perfSelectedGuests.delete(guestName);
+  } else {
+    AppState.perfSelectedGuests.add(guestName);
+  }
+  renderPerfGuestChips();
+}
+
+function renderPerfIndividualRatings() {
+  const wrap = document.getElementById('perf-individual-ratings-wrap');
+  const container = document.getElementById('perf-individual-ratings-container');
+  if (!wrap || !container) return;
+
+  const selectedIds = Array.from(AppState.perfSelectedCandidates);
+  if (selectedIds.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  container.innerHTML = selectedIds.map(id => {
+    const cand = AppState.candidates.find(c => c.id === id);
+    return `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(10, 8, 30, 0.5); padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <span style="font-size: 0.85rem; font-weight: 700; color: #FFFFFF;">${cand?.first_name || 'Élève'}</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="number" id="perf-score-${id}" class="custom-input" min="0" max="20" step="0.5" placeholder="Note /20" style="width: 100px; text-align: center;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">/20</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function savePerformance() {
+  const week = AppState.selectedPrimeWeek;
+  const perfType = document.getElementById('perf-type-select')?.value || 'chant';
+  const isMedley = perfType === 'chant' && (document.getElementById('perf-is-medley')?.checked || false);
+
+  let songsList = [];
+  if (isMedley || perfType === 'autoportrait') {
+    songsList = AppState.perfMedleySongs.filter(s => s.title.trim());
+  } else {
+    const t = document.getElementById('perf-song-title')?.value.trim();
+    const a = document.getElementById('perf-song-artist')?.value.trim();
+    if (t) songsList.push({ title: t, artist: a });
+  }
+
+  const selectedCandidateIds = Array.from(AppState.perfSelectedCandidates);
+  if (selectedCandidateIds.length === 0) {
+    showToast("Veuillez sélectionner au moins un élève sur la prestation *", "error");
+    return;
+  }
+
+  // Récupération des notes individuelles
+  const individualRatings = {};
+  selectedCandidateIds.forEach(id => {
+    const val = parseFloat(document.getElementById(`perf-score-${id}`)?.value);
+    if (!isNaN(val) && val >= 0 && val <= 20) {
+      individualRatings[id] = val;
+    }
+  });
+
+  const userReview = document.getElementById('perf-user-review')?.value.trim() || '';
+
+  const perfPayload = {
+    id: 'perf_' + Date.now(),
+    user_id: AppState.currentUser?.id,
+    prime_week_number: week,
+    performance_type: perfType,
+    is_medley: isMedley,
+    songs: songsList,
+    candidate_ids: selectedCandidateIds,
+    guest_names: Array.from(AppState.perfSelectedGuests),
+    individual_ratings: individualRatings,
+    user_review: userReview,
+    created_at: new Date().toISOString()
+  };
+
+  if (supabaseClient && AppState.currentUser) {
+    try {
+      const { data } = await supabaseClient.from('performances').insert({
+        user_id: AppState.currentUser.id,
+        prime_week_number: week,
+        performance_type: perfType,
+        is_medley: isMedley,
+        songs: songsList,
+        candidate_ids: selectedCandidateIds,
+        guest_names: Array.from(AppState.perfSelectedGuests),
+        individual_ratings: individualRatings,
+        user_review: userReview
+      }).select();
+      if (data && data[0]) perfPayload.id = data[0].id;
+    } catch (e) {
+      console.warn("Supabase perf save fallback:", e);
+    }
+  }
+
+  AppState.performances.unshift(perfPayload);
+  saveLocalState('performances');
+
+  // Reset du formulaire
+  AppState.perfSelectedCandidates.clear();
+  AppState.perfSelectedGuests.clear();
+  AppState.perfMedleySongs = [];
+  const singleTitle = document.getElementById('perf-song-title');
+  const singleArtist = document.getElementById('perf-song-artist');
+  const reviewEl = document.getElementById('perf-user-review');
+  if (singleTitle) singleTitle.value = '';
+  if (singleArtist) singleArtist.value = '';
+  if (reviewEl) reviewEl.value = '';
+
+  renderPerfCandidatesGrid();
+  renderPerfGuestChips();
+  renderMedleySongRows();
+  renderPrimePerformancesList();
+
+  showToast("Prestation validée et enregistrée ! ✨");
+}
+
+function renderPrimePerformancesList() {
+  const container = document.getElementById('prime-performances-list');
+  const badge = document.getElementById('prime-perf-count-badge');
+  if (!container) return;
+
+  const perfs = AppState.performances.filter(p => p.prime_week_number === AppState.selectedPrimeWeek);
+  if (badge) badge.textContent = `${perfs.length} prestation(s)`;
+
+  if (perfs.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 16px 0;">Aucune prestation enregistrée pour ce prime.</div>`;
+    return;
+  }
+
+  container.innerHTML = perfs.map(p => {
+    const candNames = (p.candidate_ids || []).map(id => AppState.candidates.find(c => c.id === id)?.first_name || id).join(', ');
+    const songsText = (p.songs || []).map(s => `${s.title}${s.artist ? ' (' + s.artist + ')' : ''}`).join(' + ');
+
+    return `
+      <div class="item-card">
+        <div class="item-card-header">
+          <div>
+            <div class="item-title">${candNames}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Type : ${p.performance_type} ${p.is_medley ? '(Medley)' : ''}</div>
+          </div>
+          <span class="badge-gold">Semaine ${p.prime_week_number}</span>
+        </div>
+        ${songsText ? `<div style="font-size: 0.82rem; color: var(--text-gold); margin-top: 4px;">🎵 ${songsText}</div>` : ''}
+        ${(p.guest_names && p.guest_names.length > 0) ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">🎤 Avec : ${p.guest_names.join(', ')}</div>` : ''}
+        ${p.user_review ? `<div style="font-size: 0.78rem; color: #FFFFFF; margin-top: 6px; font-style: italic;">« ${p.user_review} »</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPrimeTab() {
+  loadPrimeForSelectedWeek(AppState.selectedPrimeWeek);
+  renderPerfCandidatesGrid();
+}
+
+// ============================================================
+// 3. ONGLET PRIMES PASSÉS
+// ============================================================
+function renderPastPrimesTab() {
+  const container = document.getElementById('past-primes-list');
+  if (!container) return;
+
+  if (AppState.primes.length === 0) {
+    container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 24px 0;">Aucun prime enregistré pour l'instant.</div>`;
+    return;
+  }
+
+  // Trier par semaine
+  const sortedPrimes = [...AppState.primes].sort((a, b) => b.week_number - a.week_number);
+
+  container.innerHTML = sortedPrimes.map(p => {
+    const elimCand = AppState.candidates.find(c => c.id === p.eliminated_candidate_id);
+    const perfCount = AppState.performances.filter(perf => perf.prime_week_number === p.week_number).length;
+    const guestsList = Array.isArray(p.guests) ? p.guests.join(', ') : '';
+
+    return `
+      <div class="item-card" onclick="openPastPrimeModal(${p.week_number})" style="cursor: pointer; transition: transform 0.15s ease;">
+        <div class="item-card-header">
+          <div>
+            <div class="item-title">Prime Semaine ${p.week_number}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${p.date || 'Date non définie'}</div>
+          </div>
+          <span class="badge-gold">${perfCount} prestation(s)</span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-gold); font-weight: 700; margin-top: 4px;">
+          ${p.theme ? '✨ Thème : ' + p.theme : 'Sans thème'}
+        </div>
+        ${elimCand ? `<div style="font-size: 0.78rem; color: var(--danger-color); margin-top: 4px;">🚪 Éliminé(e) : ${elimCand.first_name} ${elimCand.last_name || ''}</div>` : ''}
+        ${guestsList ? `<div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">🎤 Invités : ${guestsList}</div>` : ''}
+        <div style="text-align: right; margin-top: 8px; font-size: 0.75rem; color: var(--gold-mid); font-weight: 700;">Voir les détails &rarr;</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openPastPrimeModal(weekNumber) {
+  const prime = AppState.primes.find(p => p.week_number === weekNumber) || { week_number: weekNumber };
+  const perfs = AppState.performances.filter(perf => perf.prime_week_number === weekNumber);
+  const elimCand = AppState.candidates.find(c => c.id === prime.eliminated_candidate_id);
+
+  const titleEl = document.getElementById('past-prime-modal-title');
+  const contentEl = document.getElementById('past-prime-modal-content');
+  const modal = document.getElementById('prime-detail-modal');
+
+  if (titleEl) titleEl.textContent = `Détail du Prime - Semaine ${weekNumber}`;
+  if (contentEl) {
+    contentEl.innerHTML = `
+      <div style="background: rgba(10, 8, 30, 0.5); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+        <div style="font-size: 0.95rem; font-weight: 800; color: #FFFFFF;">${prime.theme || 'Thème non précisé'}</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px;">Date : ${prime.date || 'Non renseignée'}</div>
+        ${elimCand ? `<div style="font-size: 0.85rem; color: var(--danger-color); margin-bottom: 6px;">🚪 Éliminé(e) : <strong>${elimCand.first_name} ${elimCand.last_name || ''}</strong></div>` : ''}
+        ${(prime.guests && prime.guests.length > 0) ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">🎤 Artistes invités : ${prime.guests.join(', ')}</div>` : ''}
+        ${(prime.gate_217_guests && prime.gate_217_guests.length > 0) ? `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px;">🚪 Porte du 217 : ${prime.gate_217_guests.join(', ')}</div>` : ''}
+        ${prime.overall_review ? `<div style="font-size: 0.82rem; color: #FFFFFF; margin-top: 8px; font-style: italic;">« ${prime.overall_review} »</div>` : ''}
+      </div>
+
+      <h4 style="font-size: 0.9rem; font-weight: 800; color: var(--text-gold); margin-bottom: 10px; text-transform: uppercase;">Prestations du Prime (${perfs.length})</h4>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        ${perfs.length === 0 ? `<div style="color: var(--text-muted); font-size: 0.8rem;">Aucune prestation notée pour ce prime.</div>` : perfs.map(p => {
+          const names = (p.candidate_ids || []).map(id => AppState.candidates.find(c => c.id === id)?.first_name || id).join(', ');
+          const songs = (p.songs || []).map(s => `${s.title}${s.artist ? ' (' + s.artist + ')' : ''}`).join(' + ');
+          const ratings = p.individual_ratings ? Object.entries(p.individual_ratings).map(([id, note]) => {
+            const cand = AppState.candidates.find(c => c.id === id);
+            return `${cand?.first_name || 'Élève'}: ${note}/20`;
+          }).join(' • ') : '';
+
+          return `
+            <div class="item-card" style="margin-bottom: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <span style="font-weight: 800; color: #FFFFFF; font-size: 0.9rem;">${names}</span>
+                <span class="badge-gold">${p.performance_type}</span>
+              </div>
+              ${songs ? `<div style="font-size: 0.8rem; color: var(--text-gold); margin-top: 2px;">🎵 ${songs}</div>` : ''}
+              ${ratings ? `<div style="font-size: 0.75rem; color: #10B981; font-weight: 700; margin-top: 4px;">📊 Notes : ${ratings}</div>` : ''}
+              ${p.user_review ? `<div style="font-size: 0.78rem; color: var(--text-secondary); font-style: italic; margin-top: 4px;">« ${p.user_review} »</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  if (modal) modal.classList.add('open');
+}
+
+function closePastPrimeModal() {
+  const modal = document.getElementById('prime-detail-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+// ============================================================
+// 4. ONGLET CLASSEMENT (DRAG & DROP SORTABLE JS)
+// ============================================================
+function onRankingWeekChange(weekVal) {
+  AppState.selectedRankingWeek = parseInt(weekVal);
+  renderRankingsTab();
+}
+
+function renderRankingsTab() {
+  const container = document.getElementById('ranking-sortable-list');
+  if (!container) return;
+
+  const week = AppState.selectedRankingWeek;
+  let orderedCandidateIds = AppState.weeklyRankings[week];
+
+  // Si pas de classement sauvegardé pour cette semaine, prendre les élèves actifs par défaut
+  if (!orderedCandidateIds || orderedCandidateIds.length === 0) {
+    orderedCandidateIds = AppState.candidates.map(c => c.id);
+  }
+
+  // Filtrer pour ne garder que les candidats valides
+  const candidateMap = new Map(AppState.candidates.map(c => [c.id, c]));
+  const orderedList = orderedCandidateIds
+    .map(id => candidateMap.get(id))
+    .filter(Boolean);
+
+  // Ajouter les éventuels candidats manquants à la fin
+  AppState.candidates.forEach(c => {
+    if (!orderedList.some(item => item.id === c.id)) {
+      orderedList.push(c);
+    }
+  });
+
+  container.innerHTML = orderedList.map((c, index) => `
+    <div class="ranking-card-item" data-id="${c.id}">
+      <div class="ranking-badge-pos">${index + 1}</div>
+      <img class="ranking-avatar" src="${c.photo_url || 'icons/favicon.png'}" alt="${c.first_name}">
+      <div class="ranking-details">
+        <div class="ranking-name">${c.first_name} ${c.last_name || ''}</div>
+        <div class="ranking-meta">${c.status === 'eliminated' ? 'Éliminé(e)' : (c.city || 'En lice')}</div>
+      </div>
+      <div class="ranking-drag-handle">☰</div>
+    </div>
+  `).join('');
+
+  // Initialisation de SortableJS
+  if (typeof Sortable !== 'undefined') {
+    if (AppState.sortableInstance) {
+      AppState.sortableInstance.destroy();
+    }
+
+    AppState.sortableInstance = new Sortable(container, {
+      animation: 150,
+      handle: '.ranking-card-item',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      touchStartThreshold: 3,
+      onEnd: function () {
+        updateRankingBadges();
+      }
+    });
+  }
+}
+
+function updateRankingBadges() {
+  const container = document.getElementById('ranking-sortable-list');
+  if (!container) return;
+  const items = container.querySelectorAll('.ranking-card-item');
+  items.forEach((item, idx) => {
+    const badge = item.querySelector('.ranking-badge-pos');
+    if (badge) badge.textContent = idx + 1;
+  });
+}
+
+function getSortedCandidateIdsFromDOM() {
+  const container = document.getElementById('ranking-sortable-list');
+  if (!container) return [];
+  const items = container.querySelectorAll('.ranking-card-item');
+  return Array.from(items).map(el => el.getAttribute('data-id'));
+}
+
+async function saveWeeklyRanking() {
+  const week = AppState.selectedRankingWeek;
+  const newOrder = getSortedCandidateIdsFromDOM();
+
+  // Vérifier si un classement existe déjà pour cette semaine
+  const existing = AppState.weeklyRankings[week];
+  if (existing && existing.length > 0) {
+    AppState.pendingRankingToSave = newOrder;
+    const modal = document.getElementById('overwrite-ranking-modal');
+    const weekSpan = document.getElementById('overwrite-modal-week');
+    if (weekSpan) weekSpan.textContent = week;
+    if (modal) modal.classList.add('open');
+    return;
+  }
+
+  await performSaveWeeklyRanking(week, newOrder);
+}
+
+function closeOverwriteModal() {
+  const modal = document.getElementById('overwrite-ranking-modal');
+  if (modal) modal.classList.remove('open');
+  AppState.pendingRankingToSave = null;
+}
+
+async function confirmOverwriteRanking() {
+  const week = AppState.selectedRankingWeek;
+  const newOrder = AppState.pendingRankingToSave || getSortedCandidateIdsFromDOM();
+  closeOverwriteModal();
+  await performSaveWeeklyRanking(week, newOrder);
+}
+
+async function performSaveWeeklyRanking(week, orderedIds) {
+  AppState.weeklyRankings[week] = orderedIds;
+  saveLocalState('weeklyRankings');
+
+  if (supabaseClient && AppState.currentUser) {
+    try {
+      await supabaseClient.from('weekly_rankings').upsert({
+        user_id: AppState.currentUser.id,
+        week_number: week,
+        ranked_candidate_ids: orderedIds
+      }, { onConflict: 'user_id, week_number' });
+    } catch (e) {
+      console.warn("Supabase ranking save fallback:", e);
+    }
+  }
+
+  showToast(`Classement de la Semaine ${week} enregistré avec succès ! 🏆`);
+  renderStatsTab();
+}
+
+// ============================================================
+// 5. ONGLET STATS (PROMO & ÉLÈVE)
+// ============================================================
+function onStatsPeriodChange(periodVal) {
+  AppState.statsPeriod = periodVal;
+  renderStatsTab();
+}
+
+function toggleStatsRankView(mode) {
+  AppState.statsViewRankMode = mode;
+  const pBtn = document.getElementById('stats-view-personal-btn');
+  const mBtn = document.getElementById('stats-view-musical-btn');
+
+  if (mode === 'personal') {
+    if (pBtn) pBtn.classList.add('active');
+    if (mBtn) mBtn.classList.remove('active');
+  } else {
+    if (pBtn) pBtn.classList.remove('active');
+    if (mBtn) mBtn.classList.add('active');
+  }
+  renderPromoRankingList();
+}
+
+function onStatsCandidateChange(candId) {
+  AppState.statsSelectedCandidateId = candId;
+  renderCandidateStatsCard();
+}
+
+function renderStatsTab() {
+  renderPromoRankingList();
+  renderCandidateStatsCard();
+}
+
+function renderPromoRankingList() {
+  const container = document.getElementById('stats-promo-ranking-container');
+  if (!container) return;
+
+  const isGlobal = AppState.statsPeriod === 'global';
+  const targetWeek = parseInt(AppState.statsPeriod);
+
+  // 1. Calcul du classement personnel
+  const personalRanks = {};
+  AppState.candidates.forEach(c => personalRanks[c.id] = []);
+
+  if (isGlobal) {
+    Object.values(AppState.weeklyRankings).forEach(orderList => {
+      orderList.forEach((id, idx) => {
+        if (personalRanks[id]) personalRanks[id].push(idx + 1);
+      });
+    });
+  } else {
+    const list = AppState.weeklyRankings[targetWeek] || [];
+    list.forEach((id, idx) => {
+      if (personalRanks[id]) personalRanks[id].push(idx + 1);
+    });
+  }
+
+  // 2. Calcul du classement musical (notes de chant et prestations)
+  const musicalScores = {};
+  AppState.candidates.forEach(c => musicalScores[c.id] = []);
+
+  // Notes d'évaluations (chant)
+  AppState.evaluations.forEach(e => {
+    if (isGlobal || e.week_number === targetWeek) {
+      if (e.singing_score !== null && !isNaN(e.singing_score)) {
+        if (musicalScores[e.candidate_id]) musicalScores[e.candidate_id].push(e.singing_score);
+      }
+    }
+  });
+
+  // Notes de primes
+  AppState.performances.forEach(p => {
+    if (isGlobal || p.prime_week_number === targetWeek) {
+      if (p.individual_ratings) {
+        Object.entries(p.individual_ratings).forEach(([id, score]) => {
+          if (musicalScores[id] && !isNaN(score)) musicalScores[id].push(score);
+        });
+      }
+    }
+  });
+
+  let ranked = [];
+  if (AppState.statsViewRankMode === 'personal') {
+    ranked = AppState.candidates.map(c => {
+      const ranks = personalRanks[c.id] || [];
+      const avgRank = ranks.length > 0 ? (ranks.reduce((a, b) => a + b, 0) / ranks.length) : 99;
+      return { candidate: c, val: avgRank, count: ranks.length, isRank: true };
+    }).sort((a, b) => a.val - b.val);
+  } else {
+    ranked = AppState.candidates.map(c => {
+      const scores = musicalScores[c.id] || [];
+      const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+      return { candidate: c, val: avgScore, count: scores.length, isRank: false };
+    }).sort((a, b) => b.val - a.val);
+  }
+
+  container.innerHTML = ranked.map((item, idx) => `
+    <div class="item-card" onclick="selectCandidateInStats('${item.candidate.id}')" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-weight: 900; color: var(--gold-mid); min-width: 26px;">#${idx + 1}</span>
+        <img src="${item.candidate.photo_url || 'icons/favicon.png'}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" alt="">
+        <div>
+          <div style="font-size: 0.9rem; font-weight: 700; color: #FFFFFF;">${item.candidate.first_name} ${item.candidate.last_name || ''}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${item.candidate.status === 'eliminated' ? 'Éliminé(e)' : 'En lice'}</div>
+        </div>
+      </div>
+      <div class="item-score-badge">
+        ${item.isRank ? (item.val === 99 ? 'Non classé' : 'Rang ' + item.val.toFixed(1)) : (item.val === 0 ? '--/20' : item.val.toFixed(1) + '/20')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectCandidateInStats(candId) {
+  const select = document.getElementById('stats-candidate-select');
+  if (select) {
+    select.value = candId;
+    AppState.statsSelectedCandidateId = candId;
+    renderCandidateStatsCard();
+    select.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function renderCandidateStatsCard() {
+  const candId = AppState.statsSelectedCandidateId || (AppState.candidates[0] ? AppState.candidates[0].id : null);
+  if (!candId) return;
+
+  const isGlobal = AppState.statsPeriod === 'global';
+  const targetWeek = parseInt(AppState.statsPeriod);
+
+  // 1. Évaluations de l'élève
+  const evals = AppState.evaluations.filter(e => e.candidate_id === candId && (isGlobal || e.week_number === targetWeek));
+  const evalScores = [];
+  evals.forEach(e => {
+    const s = [e.singing_score, e.dance_score, e.theatre_score].filter(val => val !== null && !isNaN(val));
+    if (s.length > 0) evalScores.push(s.reduce((a, b) => a + b, 0) / s.length);
+  });
+  const avgEval = evalScores.length > 0 ? (evalScores.reduce((a, b) => a + b, 0) / evalScores.length).toFixed(1) : '--';
+
+  // 2. Prestations de l'élève
+  const perfs = AppState.performances.filter(p => (p.candidate_ids || []).includes(candId) && (isGlobal || p.prime_week_number === targetWeek));
+  const primeScores = [];
+  perfs.forEach(p => {
+    if (p.individual_ratings && p.individual_ratings[candId] !== undefined) {
+      primeScores.push(p.individual_ratings[candId]);
+    }
+  });
+  const avgPrime = primeScores.length > 0 ? (primeScores.reduce((a, b) => a + b, 0) / primeScores.length).toFixed(1) : '--';
+
+  // 3. Moyenne globale
+  const allScores = [...evalScores, ...primeScores];
+  const avgGlobal = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : '--';
+
+  // 4. Positions classements
+  let rankPerso = '--';
+  let rankMusic = '--';
+  // Rang dans le classement hebdomadaire actuel
+  const currentRanking = isGlobal ? null : (AppState.weeklyRankings[targetWeek] || []);
+  if (currentRanking && currentRanking.includes(candId)) {
+    rankPerso = `#${currentRanking.indexOf(candId) + 1}`;
+  }
+
+  // Mise à jour de l'UI
+  const rPersoEl = document.getElementById('cand-stat-rank-perso');
+  const rMusicEl = document.getElementById('cand-stat-rank-music');
+  const aGlobalEl = document.getElementById('cand-stat-avg-global');
+  const aEvalEl = document.getElementById('cand-stat-avg-eval');
+  const aPrimeEl = document.getElementById('cand-stat-avg-prime');
+  const totPerfsEl = document.getElementById('cand-stat-total-perfs');
+
+  if (rPersoEl) rPersoEl.textContent = rankPerso;
+  if (rMusicEl) rMusicEl.textContent = avgEval !== '--' ? `${avgEval}/20` : '--';
+  if (aGlobalEl) aGlobalEl.textContent = avgGlobal !== '--' ? `${avgGlobal}/20` : '--';
+  if (aEvalEl) aEvalEl.textContent = avgEval !== '--' ? `${avgEval}/20` : '--';
+  if (aPrimeEl) aPrimeEl.textContent = avgPrime !== '--' ? `${avgPrime}/20` : '--';
+  if (totPerfsEl) totPerfsEl.textContent = evals.length + perfs.length;
+
+  // 5. Moyennes par type de prestation
+  const typeMap = {
+    chant: [],
+    danse: [],
+    theatre: [],
+    chante_danse: [],
+    comedie_musicale: [],
+    autoportrait: []
+  };
+
+  // Depuis les évals (chant, danse, théâtre)
+  evals.forEach(e => {
+    if (e.singing_score !== null) typeMap.chant.push(e.singing_score);
+    if (e.dance_score !== null) typeMap.danse.push(e.dance_score);
+    if (e.theatre_score !== null) typeMap.theatre.push(e.theatre_score);
+  });
+
+  // Depuis les primes
+  perfs.forEach(p => {
+    const score = p.individual_ratings ? p.individual_ratings[candId] : null;
+    if (score !== null && score !== undefined && typeMap[p.performance_type]) {
+      typeMap[p.performance_type].push(score);
+    }
+  });
+
+  const breakdownContainer = document.getElementById('cand-stat-types-breakdown');
+  if (breakdownContainer) {
+    const typeLabels = {
+      chant: 'Chant',
+      danse: 'Danse',
+      theatre: 'Théâtre',
+      chante_danse: 'Chanté / Dansé',
+      comedie_musicale: 'Comédie Musicale',
+      autoportrait: 'Autoportrait'
+    };
+
+    breakdownContainer.innerHTML = Object.entries(typeMap).map(([key, scores]) => {
+      const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      const pct = (avg / 20) * 100;
+      return `
+        <div class="stat-bar-row">
+          <div class="stat-bar-header">
+            <span>${typeLabels[key]}</span>
+            <strong>${scores.length > 0 ? avg.toFixed(1) + '/20 (' + scores.length + ')' : '--'}</strong>
+          </div>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill" style="width: ${pct}%;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 6. Historique détaillé des prestations
+  const historyContainer = document.getElementById('cand-stat-performances-history');
+  if (historyContainer) {
+    const allHistory = [
+      ...evals.map(e => ({
+        type: 'Évaluation',
+        week: e.week_number,
+        title: e.song_title,
+        artist: e.artist,
+        score: [e.singing_score, e.dance_score, e.theatre_score].filter(s => s !== null).join('/') || null,
+        review: e.user_review
+      })),
+      ...perfs.map(p => ({
+        type: `Prime (${p.performance_type})`,
+        week: p.prime_week_number,
+        title: (p.songs || []).map(s => s.title).join(' + '),
+        artist: (p.songs || []).map(s => s.artist).filter(Boolean).join(', '),
+        score: p.individual_ratings ? p.individual_ratings[candId] : null,
+        review: p.user_review
+      }))
+    ];
+
+    if (allHistory.length === 0) {
+      historyContainer.innerHTML = `<div style="color: var(--text-muted); font-size: 0.8rem;">Aucune prestation enregistrée pour cet élève.</div>`;
+    } else {
+      historyContainer.innerHTML = allHistory.map(item => `
+        <div class="item-card" style="margin-bottom: 6px; padding: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #FFFFFF;">
+            <span>${item.type} - Semaine ${item.week}</span>
+            <span style="color: var(--text-gold);">${item.score !== null && item.score !== undefined ? item.score + '/20' : ''}</span>
+          </div>
+          ${item.title ? `<div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">🎵 ${item.title} ${item.artist ? '(' + item.artist + ')' : ''}</div>` : ''}
+          ${item.review ? `<div style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin-top: 4px;">« ${item.review} »</div>` : ''}
+        </div>
+      `).join('');
+    }
+  }
+}
+
+// ============================================================
+// 6. ONGLET PARAMÈTRES (MODÉRATEUR)
+// ============================================================
+let uploadedCandidatePhotoBase64 = null;
+
+function handleCandidatePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    uploadedCandidatePhotoBase64 = e.target.result;
+    const preview = document.getElementById('mod-photo-preview');
+    const wrap = document.getElementById('mod-photo-preview-wrap');
+    if (preview) preview.src = uploadedCandidatePhotoBase64;
+    if (wrap) wrap.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveCandidateFromModerator() {
+  if (!AppState.isModerator) return;
+
+  const firstName = document.getElementById('mod-cand-firstname')?.value.trim();
+  const lastName = document.getElementById('mod-cand-lastname')?.value.trim();
+  const age = parseInt(document.getElementById('mod-cand-age')?.value);
+  const city = document.getElementById('mod-cand-city')?.value.trim();
+  const photoUrlInput = document.getElementById('mod-cand-photo-url')?.value.trim();
+  const status = document.getElementById('mod-cand-status')?.value || 'active';
+
+  if (!firstName) {
+    showToast("Le prénom est obligatoire", "error");
+    return;
+  }
+
+  const id = firstName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const photoUrl = uploadedCandidatePhotoBase64 || photoUrlInput || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80';
+
+  const candidatePayload = {
+    id,
+    first_name: firstName,
+    last_name: lastName || '',
+    age: isNaN(age) ? null : age,
+    city: city || '',
+    photo_url: photoUrl,
+    status
+  };
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('candidates').upsert(candidatePayload, { onConflict: 'id' });
+    } catch (e) {
+      console.warn("Supabase candidate save fallback:", e);
+    }
+  }
+
+  const existingIdx = AppState.candidates.findIndex(c => c.id === id);
+  if (existingIdx >= 0) {
+    AppState.candidates[existingIdx] = { ...AppState.candidates[existingIdx], ...candidatePayload };
+  } else {
+    AppState.candidates.push(candidatePayload);
+  }
+
+  // Reset des champs
+  document.getElementById('mod-cand-firstname').value = '';
+  document.getElementById('mod-cand-lastname').value = '';
+  document.getElementById('mod-cand-age').value = '';
+  document.getElementById('mod-cand-city').value = '';
+  document.getElementById('mod-cand-photo-url').value = '';
+  uploadedCandidatePhotoBase64 = null;
+  const wrap = document.getElementById('mod-photo-preview-wrap');
+  if (wrap) wrap.style.display = 'none';
+
+  populateCandidateSelects();
+  renderSettingsTab();
+  showToast(`Candidat(e) ${firstName} enregistré(e) avec succès ! ⭐`);
+}
+
+async function reintegrateCandidate(candidateId) {
+  if (!AppState.isModerator) return;
+
+  const cand = AppState.candidates.find(c => c.id === candidateId);
+  if (!cand) return;
+
+  cand.status = 'active';
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('candidates').update({ status: 'active' }).eq('id', candidateId);
+    } catch (e) {}
+  }
+
+  populateCandidateSelects();
+  renderSettingsTab();
+  showToast(`${cand.first_name} a été réintégré(e) dans la promotion ! ✨`);
+}
+
+function renderSettingsTab() {
+  const container = document.getElementById('mod-eliminated-candidates-list');
+  if (!container) return;
+
+  const eliminated = AppState.candidates.filter(c => c.status === 'eliminated');
+  if (eliminated.length === 0) {
+    container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.8rem; padding: 10px 0;">Aucun élève éliminé actuellement.</div>`;
+    return;
+  }
+
+  container.innerHTML = eliminated.map(c => `
+    <div class="item-card" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="${c.photo_url || 'icons/favicon.png'}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;" alt="">
+        <div>
+          <div style="font-weight: 700; color: #FFFFFF; font-size: 0.85rem;">${c.first_name} ${c.last_name || ''}</div>
+          <div style="font-size: 0.72rem; color: var(--danger-color);">Éliminé(e)</div>
+        </div>
+      </div>
+      <button class="btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" onclick="reintegrateCandidate('${c.id}')">
+        🔄 Réintégrer
+      </button>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// AUTOCOMPLÉTION RECHERCHE MUSICALE (APPLE iTUNES MUSIC API)
+// ============================================================
+let musicSearchTimeout = null;
+
+function handleMusicSearch(query, context) {
+  clearTimeout(musicSearchTimeout);
+  const dropdown = document.getElementById(`${context}-autocomplete-dropdown`);
+  if (!dropdown) return;
+
+  if (!query || query.trim().length < 2) {
+    dropdown.classList.remove('open');
+    dropdown.innerHTML = '';
+    return;
+  }
+
+  musicSearchTimeout = setTimeout(async () => {
+    try {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&country=FR&entity=song&limit=6`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data.results || data.results.length === 0) {
+        dropdown.classList.remove('open');
+        return;
+      }
+
+      dropdown.innerHTML = data.results.map(item => `
+        <div class="autocomplete-item" onclick="selectMusicSuggestion('${escapeQuote(item.trackName)}', '${escapeQuote(item.artistName)}', '${context}')">
+          <img class="autocomplete-art" src="${item.artworkUrl60 || 'icons/favicon.png'}" alt="">
+          <div>
+            <div class="autocomplete-title">${item.trackName}</div>
+            <div class="autocomplete-artist">${item.artistName}</div>
+          </div>
+        </div>
+      `).join('');
+
+      dropdown.classList.add('open');
+    } catch (err) {
+      console.warn("Music search error:", err);
+      dropdown.classList.remove('open');
+    }
+  }, 320);
+}
+
+function selectMusicSuggestion(trackName, artistName, context) {
+  const titleInput = document.getElementById(`${context}-song-title`);
+  const artistInput = document.getElementById(`${context}-song-artist`);
+  const dropdown = document.getElementById(`${context}-autocomplete-dropdown`);
+
+  if (titleInput) titleInput.value = trackName;
+  if (artistInput) artistInput.value = artistName;
+  if (dropdown) dropdown.classList.remove('open');
+}
+
+function escapeQuote(str) {
+  return (str || '').replace(/'/g, "\\'");
+}
+
+// Fermer les dropdowns de musique si clic à l'extérieur
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.autocomplete-wrapper')) {
+    document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
+
+// ============================================================
+// TOASTS iOS
+// ============================================================
 function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;

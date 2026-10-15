@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Star Academy - Le Suivi des Primes & Candidats</title>
+  <title>Star Academy - Le Suivi des Primes, Évaluations & Classements</title>
   
   <!-- Viewport avec viewport-fit=cover pour iPhone (Safe Areas & Notch / Dynamic Island) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -11,24 +11,66 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Star Ac'">
-  <meta name="theme-color" content="#0c0a24">
+  <meta name="theme-color" content="#080718">
   <meta name="format-detection" content="telephone=no">
-  <meta name="mobile-web-app-capable" content="yes">
 
   <!-- Favicon & Apple Touch Icons -->
   <link rel="icon" type="image/png" href="icons/favicon.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
   
-  <!-- Polices & Styles -->
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <!-- Fond étoilé décoratif -->
   <div class="star-dust"></div>
 
-  <div id="app-container">
-    <!-- BANDEAU HAUT (Header iOS) -->
+  <!-- ============================================================
+       1. ÉCRAN DE DÉCONNEXION (SEULEMENT CETTE PAGE SI NON CONNECTÉ)
+       ============================================================ -->
+  <div id="auth-fullscreen-container">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24">
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+        </svg>
+      </div>
+      <h1 class="auth-title">Star Academy</h1>
+      <p class="auth-subtitle" id="auth-screen-subtitle">Connectez-vous pour accéder à votre espace de suivi des primes et évaluations.</p>
+
+      <form id="auth-form" onsubmit="event.preventDefault(); handleAuthSubmit();">
+        <div class="form-group" id="auth-username-field" style="display: none; text-align: left;">
+          <label class="form-label" for="auth-username">Pseudo / Nom</label>
+          <input type="text" id="auth-username" class="custom-input" placeholder="Ex: FanStarAc">
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="auth-email">Adresse Email</label>
+          <input type="email" id="auth-email" class="custom-input" placeholder="nom@exemple.com" required>
+        </div>
+
+        <div class="form-group" style="text-align: left;">
+          <label class="form-label" for="auth-password">Mot de passe</label>
+          <input type="password" id="auth-password" class="custom-input" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="action-btn-gold" style="margin-top: 14px;">
+          Se connecter
+        </button>
+      </form>
+
+      <button id="auth-toggle-btn" class="btn-secondary" style="margin-top: 12px;" onclick="toggleAuthMode()">
+        Pas encore de compte ? S'inscrire
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       2. APPLICATION PRINCIPALE (VISIBLE UNIQUEMENT SI CONNECTÉ)
+       ============================================================ -->
+  <div id="app-container" style="display: none;">
+    <!-- HEADER APP -->
     <header class="app-header">
       <div class="brand-wrapper">
         <div class="brand-logo-star">
@@ -36,544 +78,582 @@
             <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
           </svg>
         </div>
-        <div class="brand-text">
-          <span class="brand-title">Star Academy</span>
-          <span class="brand-subtitle">Le Suivi Officieux</span>
+        <div>
+          <div class="brand-title">Star Academy</div>
+          <div class="brand-subtitle">Suivi & Évaluations</div>
         </div>
       </div>
 
-      <div class="header-actions">
-        <button id="auth-header-btn" class="auth-badge-btn" onclick="openAuthModal()">
-          <span id="auth-btn-label">Se connecter</span>
+      <div class="header-user-badge">
+        <img id="header-user-avatar" class="header-avatar" src="icons/favicon.png" alt="Avatar">
+        <span id="header-username" class="header-username">Utilisateur</span>
+        <button class="logout-icon-btn" onclick="handleSignOut()" title="Se déconnecter">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
         </button>
       </div>
     </header>
 
-    <!-- BANNIÈRE D'INFORMATION INITIALISATION SUPABASE (affichée si les tables ne sont pas encore créées) -->
-    <div id="db-alert-banner" class="db-status-banner hidden">
-      <span>ℹ️ Activez vos tables Supabase pour le multi-utilisateur</span>
-      <button onclick="openSqlModal()">Voir le script SQL</button>
-    </div>
-
-    <!-- CONTENU PRINCIPAL PAR ONGLETS -->
+    <!-- CONTENU PAR ONGLETS -->
     <main>
-      <!-- ========================================== -->
-      <!-- 1. ONGLET ACCUEIL (DASHBOARD)              -->
-      <!-- ========================================== -->
-      <section id="tab-home" class="tab-pane active">
-        <!-- Compte à rebours du prochain Prime -->
-        <div class="hero-countdown-card">
-          <div class="hero-header">
-            <span class="hero-badge">Prochain Rendez-vous</span>
-            <div class="live-indicator">
-              <span class="pulsing-dot"></span>
-              <span id="countdown-status-text">Samedi 21h10 sur TF1</span>
-            </div>
-          </div>
-          <h2 class="hero-title" id="next-prime-title">Prime des Évaluations</h2>
-          <p class="hero-subtitle" id="next-prime-desc">Qui saura convaincre les professeurs et le public ?</p>
-          
-          <div class="countdown-grid">
-            <div class="countdown-box">
-              <span class="countdown-number" id="cd-days">00</span>
-              <span class="countdown-label">Jours</span>
-            </div>
-            <div class="countdown-box">
-              <span class="countdown-number" id="cd-hours">00</span>
-              <span class="countdown-label">Heures</span>
-            </div>
-            <div class="countdown-box">
-              <span class="countdown-number" id="cd-mins">00</span>
-              <span class="countdown-label">Min</span>
-            </div>
-            <div class="countdown-box">
-              <span class="countdown-number" id="cd-secs">00</span>
-              <span class="countdown-label">Sec</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Guide d'installation iPhone Callout -->
-        <div class="ios-install-callout" id="ios-prompt-box">
-          <div class="ios-callout-text">
-            <h4>📱 Installer sur iPhone</h4>
-            <p>Ajoutez cette app sur votre écran d'accueil en 2 clics !</p>
-          </div>
-          <button class="ios-callout-btn" onclick="openIosGuideModal()">Comment faire ?</button>
-        </div>
-
-        <!-- Les Nominés de la semaine -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-            </svg>
-            Les Nominés de la semaine
-          </h3>
-          <span class="section-link" onclick="switchTab('predictions')">Pronostiquer &rarr;</span>
-        </div>
-        <div id="home-nominees-container" class="nominees-scroll-container">
-          <!-- Injecté par JavaScript -->
-        </div>
-
-        <!-- Statistiques rapides -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-            </svg>
-            Mon Suivi
-          </h3>
-        </div>
-        <div class="quick-stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">⭐</div>
-            <div class="stat-val" id="stat-fav-count">0</div>
-            <div class="stat-desc">Favoris</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📝</div>
-            <div class="stat-val" id="stat-ratings-count">0</div>
-            <div class="stat-desc">Notes données</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🏆</div>
-            <div class="stat-val" id="stat-avg-score">--/20</div>
-            <div class="stat-desc">Moyenne perso</div>
-          </div>
-        </div>
-
-        <!-- Mes Favoris Coup de Cœur -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">❤️ Mes Étoiles Coup de Cœur</h3>
-          <span class="section-link" onclick="switchTab('candidates')">Tous les élèves</span>
-        </div>
-        <div id="home-favorites-container" class="candidates-grid">
-          <!-- Injecté par JavaScript -->
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- 2. ONGLET CANDIDATS (ÉLÈVES)               -->
-      <!-- ========================================== -->
-      <section id="tab-candidates" class="tab-pane">
-        <!-- Filtres par statut -->
-        <div class="filter-pills-row">
-          <button class="filter-pill active" onclick="filterCandidates('all', this)">Tous</button>
-          <button class="filter-pill" onclick="filterCandidates('active', this)">En lice</button>
-          <button class="filter-pill" onclick="filterCandidates('nominated', this)">Nommés ⚠️</button>
-          <button class="filter-pill" onclick="filterCandidates('eliminated', this)">Éliminés</button>
-          <button class="filter-pill" onclick="filterCandidates('favorites', this)">⭐ Mes Favoris</button>
-        </div>
-
-        <!-- Barre de recherche -->
-        <div class="form-group" style="margin-top: 10px;">
-          <input type="text" id="candidate-search-input" class="custom-input" placeholder="🔍 Rechercher un élève..." oninput="handleCandidateSearch(this.value)">
-        </div>
-
-        <!-- Grille des candidats -->
-        <div id="candidates-grid-container" class="candidates-grid">
-          <!-- Cartes générées par JS -->
-        </div>
-      </section>
-
-      <!-- ========================================== -->
-      <!-- 3. ONGLET LIVE PRIME (NOTER EN DIRECT)     -->
-      <!-- ========================================== -->
-      <section id="tab-primes" class="tab-pane">
-        <div class="live-rating-card">
-          <div class="hero-header" style="margin-bottom: 12px;">
-            <span class="hero-badge">Prime en direct</span>
-            <span style="font-size: 0.8rem; color: var(--text-gold); font-weight: 700;">🎤 Noter la prestation</span>
+      <!-- ============================================================
+           TAB 1 : ÉVALUATIONS
+           ============================================================ -->
+      <section id="tab-evaluations" class="tab-pane active">
+        <div class="card card-gold">
+          <div class="card-header">
+            <h2 class="card-title">📝 Évaluer un élève</h2>
+            <span class="badge-gold" id="eval-week-badge">Semaine actuelle</span>
           </div>
 
-          <!-- Choix du prime -->
+          <!-- Sélection de la semaine -->
           <div class="form-group">
-            <label class="form-label" for="rating-prime-select">Prime concerné</label>
-            <select id="rating-prime-select" class="custom-select">
-              <!-- Chargé par JS -->
+            <label class="form-label" for="eval-week-select">Semaine de l'évaluation</label>
+            <select id="eval-week-select" class="custom-select" onchange="onEvalWeekChange(this.value)">
+              <!-- Options semaines 1 à 12 générées par JS -->
             </select>
           </div>
 
-          <!-- Choix du candidat -->
+          <!-- Sélection de l'élève (Obligatoire) -->
           <div class="form-group">
-            <label class="form-label" for="rating-candidate-select">Élève sur scène</label>
-            <select id="rating-candidate-select" class="custom-select">
-              <!-- Chargé par JS -->
+            <label class="form-label" for="eval-candidate-select">Élève évalué *</label>
+            <select id="eval-candidate-select" class="custom-select" required onchange="onEvalCandidateChange(this.value)">
+              <option value="">Sélectionner un élève...</option>
             </select>
           </div>
 
-          <!-- Chanson chantée -->
-          <div class="form-group">
-            <label class="form-label" for="rating-song-input">Titre de la chanson / Duo</label>
-            <input type="text" id="rating-song-input" class="custom-input" placeholder="Ex: Ne me quitte pas (duo avec invité)...">
+          <!-- Titre de la chanson et interprète original (avec recherche automatique) -->
+          <div class="form-group autocomplete-wrapper">
+            <label class="form-label" for="eval-song-title">Titre de la chanson (Recherche automatique)</label>
+            <input type="text" id="eval-song-title" class="custom-input" placeholder="🔍 Tapez le titre pour chercher..." autocomplete="off" oninput="handleMusicSearch(this.value, 'eval')">
+            <div id="eval-autocomplete-dropdown" class="autocomplete-dropdown"></div>
           </div>
 
-          <!-- Curseur de note globale sur 20 -->
           <div class="form-group">
-            <label class="form-label">Note globale sur 20</label>
-            <div class="score-slider-wrap">
-              <div class="score-display">
-                <span class="score-number" id="live-score-display">15.0</span>
-                <span class="score-max">/20</span>
-              </div>
-              <div class="score-appreciation" id="live-score-appreciation">Très bonne prestation !</div>
-              <input type="range" id="live-score-slider" class="score-slider" min="0" max="20" step="0.5" value="15" oninput="updateScoreDisplay(this.value)">
+            <label class="form-label" for="eval-song-artist">Interprète original</label>
+            <input type="text" id="eval-song-artist" class="custom-input" placeholder="Nom de l'artiste ou groupe">
+          </div>
+
+          <!-- Notes Chant / Danse / Théâtre -->
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label" for="eval-singing-score">Chant /20</label>
+              <input type="number" id="eval-singing-score" class="custom-input" min="0" max="20" step="0.5" placeholder="15" oninput="calculateEvalAverage()">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="eval-dance-score">Danse /20</label>
+              <input type="number" id="eval-dance-score" class="custom-input" min="0" max="20" step="0.5" placeholder="14" oninput="calculateEvalAverage()">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="eval-theatre-score">Théâtre /20</label>
+              <input type="number" id="eval-theatre-score" class="custom-input" min="0" max="20" step="0.5" placeholder="16" oninput="calculateEvalAverage()">
             </div>
           </div>
 
-          <!-- Sous-critères optionnels (Chant & Danse) -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Chant /20</label>
-              <input type="number" id="rating-sing-input" class="custom-input" min="0" max="20" step="0.5" placeholder="15">
+          <!-- Affichage dynamique de la moyenne calculée -->
+          <div class="average-score-card">
+            <div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Moyenne de l'évaluation</div>
+              <div style="font-size: 0.85rem; color: #FFFFFF;" id="eval-appreciation-text">Renseignez les notes pour voir la moyenne</div>
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Danse /20</label>
-              <input type="number" id="rating-dance-input" class="custom-input" min="0" max="20" step="0.5" placeholder="14">
-            </div>
+            <div class="average-score-val" id="eval-average-display">-- /20</div>
           </div>
 
-          <!-- Commentaire -->
+          <!-- Avis sur l'évaluation -->
           <div class="form-group">
-            <label class="form-label" for="rating-comment-input">Mon commentaire / critique</label>
-            <textarea id="rating-comment-input" class="custom-textarea" rows="2" placeholder="Ce que j'ai pensé de la justesse, de l'émotion et de l'énergie..."></textarea>
+            <label class="form-label" for="eval-user-review">Mon avis sur l'évaluation</label>
+            <textarea id="eval-user-review" class="custom-textarea" rows="2" placeholder="Ce que j'ai pensé de la justesse, de l'émotion et de l'attitude..."></textarea>
           </div>
 
-          <!-- Bouton enregistrer -->
-          <button class="action-btn-gold" onclick="saveUserRating()">
-            ✨ Enregistrer ma note
+          <!-- Observations des profs -->
+          <div class="form-group">
+            <label class="form-label" for="eval-teachers-feedback">Observations des professeurs</label>
+            <textarea id="eval-teachers-feedback" class="custom-textarea" rows="2" placeholder="Retours de Michael Goldman, Marlène, Sofia, etc..."></textarea>
+          </div>
+
+          <button class="action-btn-gold" onclick="saveEvaluation()">
+            💾 Enregistrer l'évaluation
           </button>
         </div>
 
-        <!-- Historique de mes notes pour ce Prime -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">📋 Mes notes du Prime</h3>
-        </div>
-        <div id="ratings-history-container" class="user-ratings-list">
-          <!-- Rempli par JS -->
+        <!-- Liste des évaluations de la semaine -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📋 Évaluations de la semaine</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="eval-count-badge">0 élève(s)</span>
+          </div>
+          <div id="evaluations-week-list">
+            <!-- Liste injectée par JS -->
+          </div>
         </div>
       </section>
 
-      <!-- ========================================== -->
-      <!-- 4. ONGLET PRONOSTICS                       -->
-      <!-- ========================================== -->
-      <section id="tab-predictions" class="tab-pane">
-        <div class="prediction-box">
-          <div class="hero-header">
-            <span class="hero-badge">Pronostics du Samedi</span>
-            <span style="font-size: 0.75rem; color: var(--text-gold); font-weight: 700;">🔮 Qui reste ? Qui part ?</span>
+      <!-- ============================================================
+           TAB 2 : PRIME (ENREGISTREMENT & PRESTATIONS)
+           ============================================================ -->
+      <section id="tab-prime" class="tab-pane">
+        <!-- 1. Enregistrement du Prime -->
+        <div class="card card-gold">
+          <div class="card-header">
+            <h2 class="card-title">🎤 Le Prime de la semaine</h2>
+            <span class="badge-gold" id="prime-mode-badge">Configuration</span>
           </div>
-          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
-            Faites vos prédictions sur l'issue du prime avant l'annonce officielle des résultats par Nikos !
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="prime-week-select">Semaine du prime</label>
+              <select id="prime-week-select" class="custom-select" onchange="loadPrimeForSelectedWeek(this.value)">
+                <!-- Rempli par JS -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="prime-date-input">Date du prime</label>
+              <input type="date" id="prime-date-input" class="custom-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="prime-theme-input">Thème de la semaine</label>
+            <input type="text" id="prime-theme-input" class="custom-input" placeholder="Ex: Spéciale comédies musicales, Tous chœur...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="prime-eliminated-select">Élève éliminé lors du prime</label>
+            <select id="prime-eliminated-select" class="custom-select">
+              <option value="">Aucun / En attente du direct...</option>
+            </select>
+          </div>
+
+          <!-- Invités du prime (Tags avec touche Entrée) -->
+          <div class="form-group">
+            <label class="form-label">Artistes invités du prime (Appuyez sur Entrée)</label>
+            <div class="tags-input-container" id="prime-guests-container">
+              <!-- Badges de tags -->
+              <input type="text" id="prime-guest-input" class="tag-input-bare" placeholder="Ajouter un invité..." onkeydown="handleGuestTagInput(event, 'prime')">
+            </div>
+          </div>
+
+          <!-- Invités Porte du 217 (Tags avec touche Entrée) -->
+          <div class="form-group">
+            <label class="form-label">Invités Porte du 217 (Appuyez sur Entrée)</label>
+            <div class="tags-input-container" id="prime-gate217-container">
+              <input type="text" id="prime-gate217-input" class="tag-input-bare" placeholder="Ajouter une personne..." onkeydown="handleGuestTagInput(event, 'gate217')">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="prime-overall-review">Avis global sur le prime</label>
+            <textarea id="prime-overall-review" class="custom-textarea" rows="2" placeholder="Ambiance générale, qualité du show, surprises..."></textarea>
+          </div>
+
+          <button class="btn-secondary" onclick="savePrimeInfo()">
+            💾 Enregistrer les informations du prime
+          </button>
+        </div>
+
+        <!-- 2. Saisie d'une Prestation -->
+        <div class="card card-gold">
+          <div class="card-header">
+            <h3 class="card-title">✨ Ajouter une prestation</h3>
+          </div>
+
+          <!-- Type de prestation -->
+          <div class="form-group">
+            <label class="form-label" for="perf-type-select">Type de prestation</label>
+            <select id="perf-type-select" class="custom-select" onchange="onPerfTypeChange(this.value)">
+              <option value="chant" selected>Chant (par défaut)</option>
+              <option value="autoportrait">Autoportrait</option>
+              <option value="theatre">Théâtre</option>
+              <option value="chante_danse">Chanté/Dansé</option>
+              <option value="danse">Danse</option>
+              <option value="comedie_musicale">Comédie musicale</option>
+            </select>
+          </div>
+
+          <!-- Case à cocher Medley (si type == chant) -->
+          <div class="form-group" id="perf-medley-checkbox-wrap" style="margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-main); cursor: pointer;">
+              <input type="checkbox" id="perf-is-medley" onchange="toggleMedleyMode(this.checked)" style="width: 18px; height: 18px; accent-color: var(--gold-mid);">
+              <span>Prestation sous forme de <strong>Medley</strong> (plusieurs chansons)</span>
+            </label>
+          </div>
+
+          <!-- Chanson unique OU Chansons multiples (Medley/Autoportrait) -->
+          <div id="perf-single-song-wrap">
+            <div class="form-group autocomplete-wrapper">
+              <label class="form-label" for="perf-song-title">Titre de la chanson (Recherche)</label>
+              <input type="text" id="perf-song-title" class="custom-input" placeholder="🔍 Rechercher la chanson..." autocomplete="off" oninput="handleMusicSearch(this.value, 'perf')">
+              <div id="perf-autocomplete-dropdown" class="autocomplete-dropdown"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="perf-song-artist">Artiste original</label>
+              <input type="text" id="perf-song-artist" class="custom-input" placeholder="Interprète original...">
+            </div>
+          </div>
+
+          <!-- Zone Multi-chansons pour Medley / Autoportrait -->
+          <div id="perf-multi-song-wrap" style="display: none;" class="form-group">
+            <label class="form-label">Chansons du Medley / Autoportrait</label>
+            <div id="medley-songs-container" class="medley-rows-container">
+              <!-- Lignes de chansons -->
+            </div>
+            <button type="button" class="btn-secondary" style="margin-top: 8px; font-size: 0.8rem;" onclick="addMedleySongRow()">
+              ➕ Ajouter une chanson au medley
+            </button>
+          </div>
+
+          <!-- Élèves sur la prestation (Sélection multiple) -->
+          <div class="form-group">
+            <label class="form-label">Élève(s) sur la prestation * (Touchez pour sélectionner)</label>
+            <div id="perf-candidates-select-grid" class="candidates-select-grid">
+              <!-- Chips des élèves générés par JS -->
+            </div>
+          </div>
+
+          <!-- Invités sur la prestation (sélection parmi les invités du prime) -->
+          <div class="form-group">
+            <label class="form-label">Invité(s) sur cette prestation (facultatif)</label>
+            <div id="perf-guests-chips-container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Saisissez d'abord des invités dans le prime ci-dessus pour les sélectionner ici.</span>
+            </div>
+          </div>
+
+          <!-- Notes individuelles des élèves sélectionnés -->
+          <div class="form-group" id="perf-individual-ratings-wrap" style="display: none;">
+            <label class="form-label">Note(s) individuelle(s) sur 20 (facultatif)</label>
+            <div id="perf-individual-ratings-container" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Inputs générés selon les élèves cochés -->
+            </div>
+          </div>
+
+          <!-- Mon avis sur la prestation -->
+          <div class="form-group">
+            <label class="form-label" for="perf-user-review">Mon avis sur la prestation (facultatif)</label>
+            <textarea id="perf-user-review" class="custom-textarea" rows="2" placeholder="Émotion, scénographie, harmonies vocales..."></textarea>
+          </div>
+
+          <button class="action-btn-gold" onclick="savePerformance()">
+            ✨ Valider la prestation
+          </button>
+        </div>
+
+        <!-- 3. Prestations passées de ce Prime -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🎶 Prestations de ce Prime</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="prime-perf-count-badge">0 prestation(s)</span>
+          </div>
+          <div id="prime-performances-list">
+            <!-- Liste injectée par JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           TAB 3 : PRIMES PASSÉS
+           ============================================================ -->
+      <section id="tab-past-primes" class="tab-pane">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📺 Historique des Primes</h2>
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px;">
+            Consultez les détails, les thèmes, les invités et toutes les prestations des primes enregistrés.
+          </p>
+          <div id="past-primes-list">
+            <!-- Liste injectée par JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           TAB 4 : CLASSEMENT (DRAG & DROP HEBDOMADAIRE)
+           ============================================================ -->
+      <section id="tab-rankings" class="tab-pane">
+        <div class="card card-gold">
+          <div class="card-header">
+            <h2 class="card-title">🏆 Mon Classement</h2>
+            <span class="badge-gold">Glisser / Déposer</span>
+          </div>
+
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">
+            Glissez-déposez les cartes des élèves pour établir votre classement personnel de la semaine.
           </p>
 
-          <div class="prediction-category">
-            <div class="prediction-category-title">
-              <span>🇫🇷 Sauvé(e) par le vote du public</span>
-            </div>
-            <select id="pred-public-select" class="custom-select">
-              <option value="">Sélectionner un élève sauvé par le public</option>
+          <div class="form-group">
+            <label class="form-label" for="ranking-week-select">Semaine du classement</label>
+            <select id="ranking-week-select" class="custom-select" onchange="onRankingWeekChange(this.value)">
+              <!-- Options semaines générées par JS -->
             </select>
           </div>
 
-          <div class="prediction-category">
-            <div class="prediction-category-title">
-              <span>🤝 Sauvé(e) par le vote des élèves</span>
-            </div>
-            <select id="pred-students-select" class="custom-select">
-              <option value="">Sélectionner l'élève repêché au château</option>
-            </select>
+          <!-- Liste numérotée draggable SortableJS -->
+          <div id="ranking-sortable-list" class="ranking-drop-list">
+            <!-- Items de candidats injectés par JS -->
           </div>
 
-          <div class="prediction-category">
-            <div class="prediction-category-title">
-              <span>🚪 Éliminé(e) ce samedi</span>
-            </div>
-            <select id="pred-eliminated-select" class="custom-select">
-              <option value="">Sélectionner l'élève qui quitte l'aventure</option>
-            </select>
-          </div>
-
-          <button class="action-btn-gold" style="margin-top: 10px;" onclick="saveUserPrediction()">
-            🔮 Valider mes pronostics
+          <button class="action-btn-gold" style="margin-top: 16px;" onclick="saveWeeklyRanking()">
+            💾 Enregistrer mon classement
           </button>
-        </div>
-
-        <div class="section-title-wrap">
-          <h3 class="section-title">📊 Tendances & Comparaisons</h3>
-        </div>
-        <div id="community-predictions-box" style="background: var(--bg-card); border-radius: var(--radius-md); padding: 14px; border: 1px solid var(--border-subtle); font-size: 0.85rem; color: var(--text-secondary);">
-          Connectez-vous pour voir les tendances de votes de vos amis et de la communauté !
         </div>
       </section>
 
-      <!-- ========================================== -->
-      <!-- 5. ONGLET PROFIL & CLASSEMENTS             -->
-      <!-- ========================================== -->
-      <section id="tab-profile" class="tab-pane">
-        <!-- Bloc Identité Utilisateur -->
-        <div class="user-profile-header">
-          <img id="user-profile-avatar" class="profile-avatar-large" src="icons/favicon.png" alt="Avatar">
-          <div class="profile-details">
-            <h3 id="user-profile-name">Invité</h3>
-            <p id="user-profile-email">Mode démo local</p>
+      <!-- ============================================================
+           TAB 5 : STATS
+           ============================================================ -->
+      <section id="tab-stats" class="tab-pane">
+        <!-- Filtre de période -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">📊 Statistiques & Classements</h2>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label class="form-label" for="stats-period-select">Période d'analyse</label>
+            <select id="stats-period-select" class="custom-select" onchange="onStatsPeriodChange(this.value)">
+              <option value="global">Toutes les semaines (Bilan global)</option>
+              <!-- Semaines 1 à 12 -->
+            </select>
           </div>
         </div>
 
-        <!-- Mon Podium Personnalisé -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">🏆 Mon Podium Personnel</h3>
-        </div>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">
-          Calculé selon vos notes moyennes attribuées à chaque élève.
-        </p>
+        <!-- Classements Promo (Personnel & Musical) -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🏅 Classements de la Promo</h3>
+          </div>
 
-        <div class="podium-container" id="user-podium-container">
-          <!-- Deuxième (Argent) -->
-          <div class="podium-step podium-second">
-            <img id="podium-2-img" class="podium-avatar" src="icons/favicon.png" alt="2e">
-            <span class="podium-name" id="podium-2-name">--</span>
-            <span class="podium-score" id="podium-2-score">--/20</span>
-            <div class="podium-block">2</div>
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <button id="stats-view-personal-btn" class="filter-pill active" onclick="toggleStatsRankView('personal')">Mon Classement Perso</button>
+            <button id="stats-view-musical-btn" class="filter-pill" onclick="toggleStatsRankView('musical')">Classement Musical (Moyennes)</button>
           </div>
-          <!-- Premier (Or) -->
-          <div class="podium-step podium-first">
-            <img id="podium-1-img" class="podium-avatar" src="icons/favicon.png" alt="1er">
-            <span class="podium-name" id="podium-1-name">--</span>
-            <span class="podium-score" id="podium-1-score">--/20</span>
-            <div class="podium-block">1</div>
-          </div>
-          <!-- Troisième (Bronze) -->
-          <div class="podium-step podium-third">
-            <img id="podium-3-img" class="podium-avatar" src="icons/favicon.png" alt="3e">
-            <span class="podium-name" id="podium-3-name">--</span>
-            <span class="podium-score" id="podium-3-score">--/20</span>
-            <div class="podium-block">3</div>
+
+          <div id="stats-promo-ranking-container">
+            <!-- Liste classement injectée par JS -->
           </div>
         </div>
 
-        <!-- Classement complet -->
-        <div class="section-title-wrap">
-          <h3 class="section-title">📊 Mon Classement Complet</h3>
-        </div>
-        <div id="full-ranking-container" class="user-ratings-list" style="margin-bottom: 24px;">
-          <!-- Injecté par JS -->
-        </div>
+        <!-- Fiche individuelle de l'élève -->
+        <div class="card card-gold">
+          <div class="card-header">
+            <h3 class="card-title">👤 Fiche détaillée de l'élève</h3>
+          </div>
 
-        <!-- Actions compte -->
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
-          <button id="auth-main-action-btn" class="action-btn-gold" onclick="openAuthModal()">
-            Se connecter / Créer un compte
+          <div class="form-group">
+            <label class="form-label" for="stats-candidate-select">Sélectionner un élève</label>
+            <select id="stats-candidate-select" class="custom-select" onchange="onStatsCandidateChange(this.value)">
+              <!-- Liste des élèves -->
+            </select>
+          </div>
+
+          <!-- Résumé métriques -->
+          <div class="stats-metrics-grid">
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-rank-perso">--</div>
+              <div class="stat-box-label">Rang Perso</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-rank-music">--</div>
+              <div class="stat-box-label">Rang Musical</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-avg-global">--</div>
+              <div class="stat-box-label">Moyenne Globale</div>
+            </div>
+          </div>
+
+          <div class="stats-metrics-grid" style="margin-top: -6px;">
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-avg-eval">--</div>
+              <div class="stat-box-label">Moy. Évals</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-avg-prime">--</div>
+              <div class="stat-box-label">Moy. Primes</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="cand-stat-total-perfs">0</div>
+              <div class="stat-box-label">Prestations</div>
+            </div>
+          </div>
+
+          <!-- Moyennes par type de prestation -->
+          <div style="margin-top: 14px; margin-bottom: 16px;">
+            <div class="form-label" style="margin-bottom: 10px;">Moyenne par type de prestation</div>
+            <div id="cand-stat-types-breakdown">
+              <!-- Barres de répartition par type -->
+            </div>
+          </div>
+
+          <!-- Historique des prestations de l'élève -->
+          <div class="form-label">Historique des prestations (Évals & Primes)</div>
+          <div id="cand-stat-performances-history" style="margin-top: 8px;">
+            <!-- Prestations de l'élève -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           TAB 6 : PARAMÈTRES (MODÉRATEUR UNIQUEMENT)
+           ============================================================ -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="card card-gold">
+          <div class="card-header">
+            <h2 class="card-title">⚙️ Gestion Modérateur</h2>
+            <span class="badge-gold">Admin</span>
+          </div>
+
+          <!-- Modification / Ajout de candidat -->
+          <h3 style="font-size: 0.95rem; color: #FFFFFF; margin-bottom: 10px;">➕ Ajouter ou Modifier un Candidat</h3>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="mod-cand-firstname">Prénom *</label>
+              <input type="text" id="mod-cand-firstname" class="custom-input" placeholder="Ex: Marine">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mod-cand-lastname">Nom</label>
+              <input type="text" id="mod-cand-lastname" class="custom-input" placeholder="Ex: Delplace">
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="mod-cand-age">Âge</label>
+              <input type="number" id="mod-cand-age" class="custom-input" placeholder="24">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="mod-cand-city">Ville / Région</label>
+              <input type="text" id="mod-cand-city" class="custom-input" placeholder="Lille">
+            </div>
+          </div>
+
+          <!-- Photo : URL ou Téléversement de fichier -->
+          <div class="form-group">
+            <label class="form-label">Photo du candidat</label>
+            <input type="text" id="mod-cand-photo-url" class="custom-input" placeholder="Lien URL de l'image (https://...)" style="margin-bottom: 6px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">OU importer une photo depuis votre appareil :</div>
+            <input type="file" id="mod-cand-photo-file" class="custom-input" accept="image/*" onchange="handleCandidatePhotoUpload(event)">
+            <div id="mod-photo-preview-wrap" style="display: none; margin-top: 8px;">
+              <img id="mod-photo-preview" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold-mid);" alt="Aperçu">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mod-cand-status">Statut de l'élève</label>
+            <select id="mod-cand-status" class="custom-select">
+              <option value="active">En lice</option>
+              <option value="eliminated">Éliminé(e)</option>
+            </select>
+          </div>
+
+          <button class="action-btn-gold" style="margin-bottom: 24px;" onclick="saveCandidateFromModerator()">
+            💾 Enregistrer le candidat
           </button>
-          <button class="btn-secondary" onclick="openIosGuideModal()">
-            📱 Guide d'installation iPhone
-          </button>
-          <button class="btn-secondary" onclick="openSqlModal()">
-            ⚙️ Script SQL Supabase
-          </button>
+
+          <!-- Réintégrer un élève éliminé -->
+          <h3 style="font-size: 0.95rem; color: #FFFFFF; margin-bottom: 8px;">🔄 Réintégrer un élève éliminé</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px;">
+            Remet le statut de l'élève à « En lice » en 1 clic.
+          </p>
+
+          <div id="mod-eliminated-candidates-list">
+            <!-- Liste des éliminés avec bouton réintégrer -->
+          </div>
         </div>
       </section>
     </main>
 
-    <!-- ========================================== -->
-    <!-- BARRE DE NAVIGATION INFÉRIEURE (iOS TAB BAR) -->
-    <!-- ========================================== -->
-    <nav class="ios-tab-bar">
-      <button class="tab-btn active" onclick="switchTab('home')">
-        <svg viewBox="0 0 24 24">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-        <span>Accueil</span>
+    <!-- ============================================================
+         BARRE DE NAVIGATION INFÉRIEURE (iOS TAB BAR)
+         ============================================================ -->
+    <nav class="ios-tab-bar" id="app-bottom-tab-bar">
+      <button class="tab-btn active" onclick="switchTab('evaluations')">
+        <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span>Évals</span>
       </button>
 
-      <button class="tab-btn" onclick="switchTab('candidates')">
-        <svg viewBox="0 0 24 24">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        <span>Élèves</span>
+      <button class="tab-btn" onclick="switchTab('prime')">
+        <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span>Prime</span>
       </button>
 
-      <button class="tab-btn" onclick="switchTab('primes')">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="23"/>
-          <line x1="8" y1="23" x2="16" y2="23"/>
-        </svg>
-        <span>Live Notes</span>
+      <button class="tab-btn" onclick="switchTab('past-primes')">
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+        <span>Passés</span>
       </button>
 
-      <button class="tab-btn" onclick="switchTab('predictions')">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="12 6 12 12 16 14"/>
-        </svg>
-        <span>Pronostics</span>
+      <button class="tab-btn" onclick="switchTab('rankings')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+        <span>Classement</span>
       </button>
 
-      <button class="tab-btn" onclick="switchTab('profile')">
-        <svg viewBox="0 0 24 24">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        <span>Profil</span>
+      <button class="tab-btn" onclick="switchTab('stats')">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Stats</span>
+      </button>
+
+      <!-- Bouton Paramètres (affiché uniquement si rôle modérateur) -->
+      <button class="tab-btn" id="tab-btn-settings" style="display: none;" onclick="switchTab('settings')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Gestion</span>
       </button>
     </nav>
   </div>
 
-  <!-- ========================================== -->
-  <!-- MODALES                                    -->
-  <!-- ========================================== -->
+  <!-- ============================================================
+       MODALES
+       ============================================================ -->
 
-  <!-- 1. MODALE D'AUTHENTIFICATION (CONNEXION & INSCRIPTION SUPABASE) -->
-  <div id="auth-modal" class="modal-overlay">
+  <!-- MODALE CONFIRMATION ÉCRASEMENT CLASSEMENT -->
+  <div id="overwrite-ranking-modal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-grabber"></div>
       <div class="modal-header">
-        <h3 class="modal-title" id="auth-modal-title">Connexion</h3>
-        <button class="modal-close-btn" onclick="closeAuthModal()">&times;</button>
+        <h3 class="modal-title">Classement déjà existant ⚠️</h3>
+        <button class="modal-close-btn" onclick="closeOverwriteModal()">&times;</button>
       </div>
-
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
-        Connectez-vous pour sauvegarder vos notes de prime, vos pronostics et vos favoris sur votre compte personnel !
+      <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+        Un classement a déjà été enregistré pour la <strong>Semaine <span id="overwrite-modal-week">1</span></strong>.<br><br>
+        Souhaitez-vous écraser le classement précédent avec ce nouvel ordre ou annuler ?
       </p>
-
-      <div class="form-group" id="auth-username-group" style="display: none;">
-        <label class="form-label" for="auth-username">Pseudo / Nom d'artiste</label>
-        <input type="text" id="auth-username" class="custom-input" placeholder="Ex: StarFan75">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="auth-email">Adresse Email</label>
-        <input type="email" id="auth-email" class="custom-input" placeholder="votre.email@exemple.com" required>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="auth-password">Mot de passe</label>
-        <input type="password" id="auth-password" class="custom-input" placeholder="••••••••" required>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-        <button id="auth-submit-btn" class="action-btn-gold" onclick="handleAuthSubmit()">
-          Se connecter
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-secondary" onclick="closeOverwriteModal()">
+          Annuler
         </button>
-        <button id="auth-toggle-btn" class="btn-secondary" onclick="toggleAuthMode()">
-          Pas encore de compte ? S'inscrire
+        <button class="action-btn-gold btn-danger" style="color: #FFFFFF;" onclick="confirmOverwriteRanking()">
+          Écraser le classement
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 2. MODALE GUIDE INSTALLATION IPHONE -->
-  <div id="ios-guide-modal" class="modal-overlay">
+  <!-- MODALE DÉTAIL PRIME PASSÉ -->
+  <div id="prime-detail-modal" class="modal-overlay">
     <div class="modal-sheet">
       <div class="modal-grabber"></div>
       <div class="modal-header">
-        <h3 class="modal-title">Installer sur iPhone 📱</h3>
-        <button class="modal-close-btn" onclick="closeIosGuideModal()">&times;</button>
+        <h3 class="modal-title" id="past-prime-modal-title">Détail du Prime</h3>
+        <button class="modal-close-btn" onclick="closePastPrimeModal()">&times;</button>
       </div>
 
-      <div class="install-step-card">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <h5>Ouvrez ce site dans Safari</h5>
-          <p>L'installation comme application native nécessite d'utiliser le navigateur <strong>Safari</strong> sur votre iPhone.</p>
-        </div>
+      <div id="past-prime-modal-content">
+        <!-- Rempli par JS -->
       </div>
-
-      <div class="install-step-card">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <h5>Touchez le bouton Partager</h5>
-          <p>En bas au milieu de l'écran de Safari, touchez l'icône de partage <strong>(le carré avec une flèche vers le haut ⎋)</strong>.</p>
-        </div>
-      </div>
-
-      <div class="install-step-card">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <h5>Sélectionnez « Sur l'écran d'accueil »</h5>
-          <p>Faites défiler la liste vers le bas et touchez <strong>« Sur l'écran d'accueil » ➕</strong>, puis touchez <strong>Ajouter</strong> en haut à droite.</p>
-        </div>
-      </div>
-
-      <div class="install-step-card">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <h5>Profitez de l'application !</h5>
-          <p>L'icône Star Academy apparaît sur votre écran d'accueil et s'ouvre en plein écran sans les barres de navigateur.</p>
-        </div>
-      </div>
-
-      <button class="action-btn-gold" style="margin-top: 10px;" onclick="closeIosGuideModal()">
-        C'est compris !
-      </button>
     </div>
   </div>
 
-  <!-- 3. MODALE DÉTAIL CANDIDAT -->
-  <div id="candidate-modal" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-grabber"></div>
-      <div class="modal-header">
-        <h3 class="modal-title" id="modal-cand-name">Détail Élève</h3>
-        <button class="modal-close-btn" onclick="closeCandidateModal()">&times;</button>
-      </div>
-
-      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
-        <img id="modal-cand-img" src="icons/favicon.png" style="width: 80px; height: 80px; border-radius: var(--radius-md); object-fit: cover;" alt="Photo">
-        <div style="display: flex; flex-direction: column; justify-content: center;">
-          <h4 id="modal-cand-fullname" style="font-size: 1.1rem; color: #FFFFFF;">--</h4>
-          <span id="modal-cand-meta" style="font-size: 0.8rem; color: var(--text-muted);">--</span>
-          <span id="modal-cand-status" class="candidate-status-tag status-active" style="display: inline-block; position: static; margin-top: 6px; width: fit-content;">En lice</span>
-        </div>
-      </div>
-
-      <p id="modal-cand-bio" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
-        --
-      </p>
-
-      <button id="modal-cand-fav-btn" class="action-btn-gold" style="margin-bottom: 10px;" onclick="toggleCurrentCandidateFav()">
-        ⭐ Ajouter aux favoris
-      </button>
-      <button class="btn-secondary" onclick="openRatingForCurrentCandidate()">
-        🎤 Noter lors d'un prime
-      </button>
-    </div>
-  </div>
-
-  <!-- 4. MODALE SQL SUPABASE -->
-  <div id="sql-modal" class="modal-overlay">
-    <div class="modal-sheet">
-      <div class="modal-grabber"></div>
-      <div class="modal-header">
-        <h3 class="modal-title">Script SQL Supabase ⚙️</h3>
-        <button class="modal-close-btn" onclick="closeSqlModal()">&times;</button>
-      </div>
-
-      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">
-        Pour activer la séparation des données multi-utilisateurs et le stockage cloud dans votre projet Supabase, copiez ce script et exécutez-le dans votre <strong>SQL Editor Supabase</strong> :
-      </p>
-
-      <button class="action-btn-gold" style="margin-bottom: 12px;" onclick="copySqlToClipboard()">
-        📋 Copier le script SQL dans le presse-papiers
-      </button>
-
-      <textarea id="sql-code-display" class="custom-textarea" rows="8" readonly style="font-family: monospace; font-size: 0.75rem; color: #A0A5C0;"></textarea>
-    </div>
-  </div>
-
-  <!-- CONTENEUR DES NOTIFICATIONS TOAST -->
+  <!-- CONTENEUR DES TOASTS -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- SUPABASE JS CDN -->
+  <!-- LIBRAIRIE SORTABLE JS POUR LE DRAG & DROP TACTILE SUR IPHONE -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <!-- SUPABASE JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- LOGIQUE DE L'APPLICATION -->
+  <!-- APPLICATION LOGIC -->
   <script src="app.js"></script>
 </body>
 </html>
